@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	android:orientation="vertical"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    >
+<CheckBox
+	android:id="@+id/access_token_status"
+    android:layout_width="fill_parent" 
+    android:layout_height="wrap_content"
+	android:text="Authorized"
+	android:state_enabled="false"
+/>
+<Button
+	android:id="@+id/authorize_button"
+	android:text="Click here to (re)authorize"
+    android:layout_width="fill_parent" 
+    android:layout_height="wrap_content"
+	/>
+<Button
+	android:id="@+id/upload_button"
+	android:text="Choose and upload file to SoundCloud"
+    android:layout_width="fill_parent" 
+    android:layout_height="wrap_content"
+	/>
+</LinearLayout>
