@@ -1,6 +1,10 @@
 package org.urbanstew.SoundCloudDroid;
 
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
 import java.net.URLEncoder;
@@ -13,6 +17,7 @@ import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
 import org.restlet.data.Form;
+import org.restlet.data.Parameter;
 import org.restlet.engine.util.Base64;
 import org.restlet.representation.Representation;
 import org.restlet.resource.ClientResource;
@@ -20,6 +25,18 @@ import org.restlet.resource.ResourceException;
 
 import android.net.Uri;
 import android.util.Log;
+
+import org.apache.commons.httpclient.Header;
+import org.apache.commons.httpclient.HttpClient;
+import org.apache.commons.httpclient.HttpException;
+import org.apache.commons.httpclient.HttpStatus;
+import org.apache.commons.httpclient.methods.PostMethod;
+import org.apache.commons.httpclient.methods.multipart.FilePart;
+import org.apache.commons.httpclient.methods.multipart.StringPart;
+import org.apache.commons.httpclient.methods.multipart.MultipartRequestEntity;
+import org.apache.commons.httpclient.methods.multipart.Part;
+import org.apache.commons.httpclient.params.HttpMethodParams;
+
 
 /**
  * SoundCloudRequest handles communication with the SoundCloud API and
@@ -118,6 +135,34 @@ public class SoundCloudRequest
 		return null;
 	}
 	
+	void signRequest(String resourceUrl, Form parameters)
+	{
+		// construct the Signature Base String
+		try
+		{
+			String signatureBase = "POST&" +
+			URLEncoder.encode(resourceUrl, "UTF-8") +
+			"&" +
+			// is this double encode causing a bug in some cases?
+			URLEncoder.encode(parameters.encode(), "UTF-8");
+		
+			Log.d(this.getClass().toString(), "Signature Base String: " + signatureBase);
+    	
+			String signature = sign(signatureBase, mConsumerSecret + "&" + mTokenSecret);
+       	
+			Log.d(this.getClass().toString(), "Signature: " + signature);
+			parameters.add("oauth_signature", signature);
+		} catch (UnsupportedEncodingException e)
+		{
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e)
+		{
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	
     /**
      * Obtains the request token from Sound Cloud, and calls the specified
      * Runnable on success.
@@ -184,18 +229,73 @@ public class SoundCloudRequest
      */
 	void uploadFile(Uri uri)
 	{
+		//
+		Log.d(getClass().getName(), "Uploading file " + uri.getPath());
+		
 		// get the oauth parameters
 		Form parameters = parametersForm();
 		
 		// Add the two required parameters
-		parameters.add("track[asset_data]", "RIFF");
+//		parameters.add("track[asset_data]", "RIFF");
 //		parameters.add("track[description]", "file uploaded from SoundCloud Droid");
 //		parameters.add("track[sharing]", "private");
 		parameters.add("track[title]", "Upload");
 		
 		// execute the request (currently returns Bad Request (400) - Bad Request)
-		Representation r = executeRequest("http://api.soundcloud.com/tracks", parameters);
+		//Representation r = executeRequest("http://api.soundcloud.com/tracks", parameters);
 		
+		signRequest("http://api.soundcloud.com/tracks", parameters);
+		
+		File targetFile = new File(uri.getPath());
+		try
+		{
+			PostMethod filePost = new PostMethod("http://api.soundcloud.com/tracks");
+			Part[] parts = new Part[parameters.size() + 1];
+			int i=0;
+			for(Parameter p : parameters)
+			{
+				parts[i++] = new StringPart(p.getName(), p.getValue());
+				Log.d(getClass().getName(), "Parameter: " + p.getName() + "=" + p.getValue());
+			}
+			parts[i] = new FilePart("track[asset_data]", targetFile);
+
+			
+			filePost.setRequestEntity(
+                    new MultipartRequestEntity(parts, filePost.getParams())
+                    );
+			
+			ByteArrayOutputStream out = new ByteArrayOutputStream();
+			new MultipartRequestEntity(parts, filePost.getParams()).writeRequest(out);
+			System.out.println(out.toString("UTF-8"));
+			
+            HttpClient client = new HttpClient();
+            client.getHttpConnectionManager().getParams().setConnectionTimeout(5000);
+            int status = client.executeMethod(filePost);
+            if (status == HttpStatus.SC_OK) {
+                Log.d(getClass().toString(), "Upload complete, response=" + filePost.getResponseBodyAsString()
+                );
+            } else {
+                Log.d(getClass().toString(),
+                    "Upload failed, response=" + HttpStatus.getStatusText(status)
+                );
+            }
+
+		} catch (FileNotFoundException e1)
+		{
+			e1.printStackTrace();
+		} catch (HttpException e)
+		{
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e)
+		{
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+
+/*
+		  
 		if(r != null)
 		{
 			try
@@ -206,7 +306,7 @@ public class SoundCloudRequest
 			{
 				e.printStackTrace();
 			}
-		}
+		}*/
 	}
 
     /**
