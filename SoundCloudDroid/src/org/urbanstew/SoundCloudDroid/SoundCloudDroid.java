@@ -20,7 +20,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
-import android.widget.CheckBox;
+import android.widget.TextView;
 import android.widget.Toast;
 
 /**
@@ -46,15 +46,15 @@ public class SoundCloudDroid extends Activity
         super.onCreate(savedInstanceState);        
         setContentView(R.layout.main);
         
-        mAuthorized = (CheckBox) this.findViewById(R.id.access_token_status);
+        mAuthorized = (TextView) this.findViewById(R.id.authorization_status);
 
-        ((Button) this.findViewById(R.id.authorize_button))
+        mAuthorizeButton = (Button) this.findViewById(R.id.authorize_button);
+        mAuthorizeButton
         	.setOnClickListener(new OnClickListener()
 	        {
 				public void onClick(View arg0)
 				{
-					Intent authorizeIntent = new Intent(SoundCloudDroid.this, ObtainAccessToken.class);
-					startActivity(authorizeIntent);
+					authorize();
 				}
 	        });
         
@@ -66,15 +66,7 @@ public class SoundCloudDroid extends Activity
 	        		uploadFile();					
 				}
         	});
-
-        ((Button) this.findViewById(R.id.me_button))
-    	.setOnClickListener(new OnClickListener()
-    	{
-			public void onClick(View arg0)
-			{
-        		retreiveMe();					
-			}
-    	});}
+    }
         
     /**
      * The method called when the Activity is resumed.
@@ -85,20 +77,25 @@ public class SoundCloudDroid extends Activity
     public void onResume()
     {
     	super.onResume();
-        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
-        mAuthorized.setChecked(preferences.contains("oauth_access_token") && preferences.contains("oauth_access_token_secret"));
+    	updateAuthorizationStatus();
     }
 
+    /**
+     * Sets up menu options.  Currently all have to do with defect / bug reports and discussion group.
+     */
     public boolean onCreateOptionsMenu(Menu menu)
     {
         super.onCreateOptionsMenu(menu);
         
         mView = menu.add("View reported defects and feature requests").setIcon(android.R.drawable.ic_dialog_info);
-        mReport = menu.add("Report defect of feature request").setIcon(android.R.drawable.ic_dialog_alert);
+        mReport = menu.add("Report defect or feature request").setIcon(android.R.drawable.ic_dialog_alert);
         mJoinGroup = menu.add("Join discussion group").setIcon(android.R.drawable.ic_dialog_email);
         return true;
     }
     
+    /**
+     * Processes menu options.
+     */
     public boolean onOptionsItemSelected(MenuItem item) 
     {
     	if(item == mView)
@@ -112,12 +109,33 @@ public class SoundCloudDroid extends Activity
     	return true;
     }
     
+    public void updateAuthorizationStatus()
+    {
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+        if(preferences.contains("oauth_access_token") && preferences.contains("oauth_access_token_secret"))
+        {
+        	mAuthorized.setText("authorized as " + getUserName());
+        	mAuthorizeButton.setText("Re-authorize");
+        }
+        else
+        {
+        	mAuthorized.setText("unauthorized");
+        	mAuthorizeButton.setText("Authorize");
+        }
+    }
+    
+    public void authorize()
+    {
+		Intent authorizeIntent = new Intent(SoundCloudDroid.this, ObtainAccessToken.class);
+		startActivity(authorizeIntent);
+    }
+    
     /**
      * The method called when the upload button is pressed.
      * <p>
      * Invokes OIFileManager to select the file to be uplaoded, or
      * if OIFileManager is not installed it starts the browser
-     * to download it. 
+     * to download it.
      */
     public void uploadFile()
     {
@@ -129,13 +147,14 @@ public class SoundCloudDroid extends Activity
     		startActivityForResult(intent, 1);
     	} catch (ActivityNotFoundException e)
     	{
+    		Toast.makeText(this, "When OIFileManager is finished downloading, please select it to install it, and then try uploading again from SoundCloud Droid.", Toast.LENGTH_LONG).show();
     		Intent downloadOIFM = new Intent("android.intent.action.VIEW");
     		downloadOIFM.setData(Uri.parse("http://openintents.googlecode.com/files/FileManager-1.0.0.apk"));
     		startActivity(downloadOIFM);
     	}
     }
     
-    void retreiveMe()
+    String getUserName()
     {
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
 
@@ -160,13 +179,13 @@ public class SoundCloudDroid extends Activity
 
     			Document dom = db.parse(new ByteArrayInputStream(response.getBytes("UTF-8")));
     			
-    			String username = dom.getElementsByTagName("username").item(0).getFirstChild().getNodeValue();
-    			Toast.makeText(this, "Your username is: " + username, Toast.LENGTH_LONG).show();
+    			return dom.getElementsByTagName("username").item(0).getFirstChild().getNodeValue();
 		}catch(Exception e) {
 			e.printStackTrace();
 		}
-
+		return "";
     }
+    
     /**
      * The method called when the file to be uploaded is selected.
      */
@@ -176,31 +195,16 @@ public class SoundCloudDroid extends Activity
     	if(data == null)
     		return;
     	
-        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
-    	Log.d(this.getClass().toString(), "Uploading file:" + data.getData());
-    	
-        // WARNING: the following resources are not a part of the repository for security reasons
-        // to build and test this app, you should register your build of the app with SoundCloud:
-        //  http://soundcloud.com/settings/applications/new
-        // and add your Consumer Key and Consumer Secret as string resources to the project.
-        // (with names "consumer_key" and "s5rmEGv9Rw7iulickCZl", respectively)
-    	String consumerKey = getResources().getString(R.string.consumer_key);
-        String consumerSecret = getResources().getString(R.string.s5rmEGv9Rw7iulickCZl);
-
-    	SoundCloudRequest request = new SoundCloudRequest
-    	(
-    		consumerKey,
-    		consumerSecret,
-    		preferences.getString("oauth_access_token", ""),
-    		preferences.getString("oauth_access_token_secret", "")
-    	);
-    	
-    	request.uploadFile(data.getData());
+    	Intent soundCloudUpload = new Intent(SoundCloudDroid.this, SoundCloudService.class);
+    	soundCloudUpload.setData(data.getData());
+		startService(soundCloudUpload);
     }
     
-    // checkbox indicating whether SoundCloud Droid has been authorized
+    // indicating whether SoundCloud Droid has been authorized
     // to access a user account
-    CheckBox mAuthorized;
+    TextView mAuthorized;
+    
+    Button mAuthorizeButton;
     
     MenuItem mView, mReport, mJoinGroup;
 }

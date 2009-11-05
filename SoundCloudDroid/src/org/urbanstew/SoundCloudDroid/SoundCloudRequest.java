@@ -45,12 +45,21 @@ import org.apache.commons.httpclient.methods.multipart.Part;
  */
 public class SoundCloudRequest
 {
+    enum State
+    {
+    	UNAUTHORIZED,
+    	REQUEST_TOKEN_OBTAINED,
+    	AUTHORIZED
+    };
+    
+
     /**
      * Constructor for the case when neither the request or access token have
      * been obtained.
      */
 	SoundCloudRequest(String consumerKey, String consumerSecret)
 	{
+		mState = State.UNAUTHORIZED;
 		mConsumerKey = consumerKey;
 		mConsumerSecret = consumerSecret;
 		mToken = "";
@@ -58,11 +67,11 @@ public class SoundCloudRequest
 	}
 
     /**
-     * Constructor for the case when either the request or access token have
-     * been obtained.
+     * Constructor for the case when the access token has been obtained.
      */
 	SoundCloudRequest(String consumerKey, String consumerSecret, String token, String tokenSecret)
 	{
+		mState = State.AUTHORIZED;
 		mConsumerKey = consumerKey;
 		mConsumerSecret = consumerSecret;
 		mToken = token;
@@ -113,8 +122,8 @@ public class SoundCloudRequest
 			Log.d(this.getClass().toString(), "Signature: " + signature);
 	    	parameters.add("oauth_signature", signature);
 
-	    	Log.d(this.getClass().toString(), "Making POST request: " + parameters.getWebRepresentation());
-	    	Log.d(this.getClass().toString(), "POST request contents: " + parameters.getWebRepresentation().getText());
+	    	//Log.d(this.getClass().toString(), "Making POST request: " + parameters.getWebRepresentation());
+	    	//Log.d(this.getClass().toString(), "POST request contents: " + parameters.getWebRepresentation().getText());
 			Representation r = resource.post(parameters.getWebRepresentation());
 			boolean success = resource.getStatus().isSuccess();
 			Log.d(this.getClass().toString(), resource.getStatus().toString());
@@ -181,6 +190,8 @@ public class SoundCloudRequest
 				mToken = token_info.getFirstValue("oauth_token");				
 				mTokenSecret = token_info.getFirstValue("oauth_token_secret");
 				
+				mState = State.REQUEST_TOKEN_OBTAINED;
+				
 				onSuccess.run();
 			} catch (IOException e)
 			{
@@ -213,13 +224,15 @@ public class SoundCloudRequest
 
 				mToken = token_info.getFirstValue("oauth_token");
 				mTokenSecret = token_info.getFirstValue("oauth_token_secret");
+				
+				mState = State.AUTHORIZED;
 			} catch (IOException e)
 			{
 				e.printStackTrace();
 			}
-		}		
+		}
 	}
-		
+
 	String authorizationHeader(String url, String method)
 	{
 		Form parameters = parametersForm();
@@ -259,7 +272,7 @@ public class SoundCloudRequest
 
 			Part[] parts =
 			{
-				new StringPartMod("track[title]", "Upload"),
+				new StringPartMod("track[title]", "SoundCloud Droid Upload"),
 				new StringPartMod("track[sharing]", "private"),
 				new FilePart("track[asset_data]", targetFile)
 			};
@@ -387,12 +400,17 @@ public class SoundCloudRequest
 		return mTokenSecret;
 	}
 	
+	public State getState()
+	{
+		return mState;
+	}
     // Consumer key and secret
     String mConsumerKey, mConsumerSecret;
     
     // Either the Request Token and Secret or the Access Token and Secret
     String mToken, mTokenSecret;
-        
+    
+    State mState;
 }
 
 class StringPartMod extends StringPart

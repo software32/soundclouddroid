@@ -52,7 +52,6 @@ public class ObtainAccessToken extends Activity
 			public void run()
 			{
 	        	mWebView.loadUrl(mRequest.getAuthorizeUrl());
-				
 			}
         	
         });

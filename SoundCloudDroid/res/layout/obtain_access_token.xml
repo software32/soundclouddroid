@@ -5,7 +5,7 @@
     >
 <Button
 	android:id="@+id/authorized_button"
-	android:text="Click here after authorizing"
+	android:text="First, click on &quot;Allow Access&quot; in the web page above.  Then, click here."
     android:layout_width="fill_parent" 
     android:layout_height="wrap_content"
     android:layout_alignParentBottom="true"
