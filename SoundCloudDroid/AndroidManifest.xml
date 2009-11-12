@@ -1,8 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
       package="org.urbanstew.SoundCloudDroid"
-      android:versionCode="2" android:versionName="0.2">
+      android:versionName="0.3" android:versionCode="3">
     <application android:icon="@drawable/icon" android:label="@string/app_name">
+    
+    	<provider android:name="SoundCloudData" android:authorities="org.urbanstew.provider.SoundCloudDroid"></provider>
+    	
         <activity android:name=".SoundCloudDroid"
                   android:label="@string/app_name">
             <intent-filter>
@@ -11,24 +14,29 @@
             </intent-filter>
         </activity>
 
-    <activity android:name="ObtainAccessToken"></activity>
+	    <activity android:name="ObtainAccessToken"></activity>
+
+	    <activity android:name="SettingsActivity"></activity>
+	    
+	    <activity android:name="UploadsActivity"></activity>
+
+	    <activity android:name="UploadActivity"></activity>
+
+	    <service android:name="SoundCloudService">
+			<intent-filter>
+			<action android:name="com.soundcloud.upload"></action>
+			<category android:name="android.intent.category.DEFAULT"></category>
+			</intent-filter>
+		    <intent-filter>
+		                <!-- These are the interfaces supported by the service, which
+		                     you can bind to. -->
+		                <action android:name="org.urbanstew.SoundCloudDroid.ISoundCloudService" />
+		    </intent-filter>
+		</service>
     
-    <service android:name="SoundCloudService">
-<intent-filter>
-	<action android:name="com.soundcloud.upload"></action>
-	<category android:name="android.intent.category.DEFAULT"></category>
-	</intent-filter>
-    <intent-filter>
-                <!-- These are the interfaces supported by the service, which
-                     you can bind to. -->
-                <action android:name="org.urbanstew.SoundCloudDroid.ISoundCloudService" />
-    </intent-filter>
+	</application>
 
-</service>
-    
-</application>
-    <uses-sdk android:minSdkVersion="3" />
+	<uses-sdk android:minSdkVersion="3" />
 
-
-<uses-permission android:name="android.permission.INTERNET"></uses-permission>
+	<uses-permission android:name="android.permission.INTERNET"></uses-permission>
 </manifest> 

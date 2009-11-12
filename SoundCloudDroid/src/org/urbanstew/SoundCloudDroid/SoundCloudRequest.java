@@ -1,6 +1,5 @@
 package org.urbanstew.SoundCloudDroid;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -23,6 +22,7 @@ import org.restlet.resource.ClientResource;
 import org.restlet.resource.ResourceException;
 
 import android.net.Uri;
+import android.os.Bundle;
 import android.util.Log;
 
 import org.apache.commons.httpclient.Header;
@@ -51,7 +51,6 @@ public class SoundCloudRequest
     	REQUEST_TOKEN_OBTAINED,
     	AUTHORIZED
     };
-    
 
     /**
      * Constructor for the case when neither the request or access token have
@@ -59,11 +58,7 @@ public class SoundCloudRequest
      */
 	SoundCloudRequest(String consumerKey, String consumerSecret)
 	{
-		mState = State.UNAUTHORIZED;
-		mConsumerKey = consumerKey;
-		mConsumerSecret = consumerSecret;
-		mToken = "";
-		mTokenSecret = "";
+		this(consumerKey, consumerSecret, "", "");
 	}
 
     /**
@@ -71,11 +66,45 @@ public class SoundCloudRequest
      */
 	SoundCloudRequest(String consumerKey, String consumerSecret, String token, String tokenSecret)
 	{
-		mState = State.AUTHORIZED;
+		mClient.getHttpConnectionManager().getParams().setConnectionTimeout(5000);
+
 		mConsumerKey = consumerKey;
 		mConsumerSecret = consumerSecret;
 		mToken = token;
 		mTokenSecret = tokenSecret;
+
+		mState =
+			(mToken.length()==0 || mTokenSecret.length()==0) ?
+			State.UNAUTHORIZED :
+			State.AUTHORIZED;
+		
+		setUsingSandbox(false);
+	}
+	
+    /**
+     * Constructor from another SoundCloudRequest.
+     */
+	SoundCloudRequest(SoundCloudRequest soundCloudRequest)
+	{
+		this(soundCloudRequest.mConsumerKey, soundCloudRequest.mConsumerSecret, soundCloudRequest.mToken, soundCloudRequest.mTokenSecret);
+
+		mState = soundCloudRequest.mState;
+		mSoundCloudURL = soundCloudRequest.mSoundCloudURL;
+		mSoundCloudApiURL = soundCloudRequest.mSoundCloudApiURL;
+	}
+	
+	void setUsingSandbox(boolean use)
+	{
+		if(!use)
+		{
+			mSoundCloudURL = "http://soundcloud.com/";
+			mSoundCloudApiURL = "http://api.soundcloud.com/";
+		}
+		else
+		{
+			mSoundCloudURL = "http://sandbox-soundcloud.com/";
+			mSoundCloudApiURL = "http://api.sandbox-soundcloud.com/";
+		}
 	}
 	
     /**
@@ -107,20 +136,7 @@ public class SoundCloudRequest
 	    ClientResource resource = new ClientResource(resourceUrl);
     	try
 		{
-    		// construct the Signature Base String
-			String signatureBase =
-				"POST&" +
-				URLEncoder.encode(resourceUrl, "UTF-8") +
-				"&" +
-				// is this double encode causing a bug in some cases?
-				URLEncoder.encode(parameters.encode(), "UTF-8");
-			
-	       	Log.d(this.getClass().toString(), "Signature Base String: " + signatureBase);
-	    	
-			String signature = sign(signatureBase, mConsumerSecret + "&" + mTokenSecret);
-	       	
-			Log.d(this.getClass().toString(), "Signature: " + signature);
-	    	parameters.add("oauth_signature", signature);
+    		signRequest(resourceUrl, parameters, "POST");
 
 	    	//Log.d(this.getClass().toString(), "Making POST request: " + parameters.getWebRepresentation());
 	    	//Log.d(this.getClass().toString(), "POST request contents: " + parameters.getWebRepresentation().getText());
@@ -130,12 +146,6 @@ public class SoundCloudRequest
 			if(success)
 				return r;
 			return null;	    	
-		} catch (UnsupportedEncodingException e)
-		{
-			e.printStackTrace();
-		} catch (IOException e)
-		{
-			e.printStackTrace();
 		} catch (ResourceException e)
 		{
 			e.printStackTrace();
@@ -145,6 +155,8 @@ public class SoundCloudRequest
 	
 	void signRequest(String resourceUrl, Form parameters, String method)
 	{
+//		if(resourceUrl.startsWith("http://api.sandbox-"))
+//			resourceUrl = resourceUrl.replaceFirst("http://api.sandbox-", "http://api.");
 		// construct the Signature Base String
 		try
 		{
@@ -172,14 +184,15 @@ public class SoundCloudRequest
 	}
 	
     /**
-     * Obtains the request token from Sound Cloud, and calls the specified
-     * Runnable on success.
+     * Obtains the request token from Sound Cloud
+     * @return true on success.
      */
-	void obtainRequestToken(Runnable onSuccess)
+	boolean obtainRequestToken()
 	{
-    	Form parameters = parametersForm();
-    	
-    	Representation r = executeRequest("http://api.soundcloud.com/oauth/request_token", parameters);
+		mToken = mTokenSecret = "";
+		mState = State.UNAUTHORIZED;
+		    	
+    	Representation r = executeRequest(mSoundCloudApiURL + "oauth/request_token", parametersForm());
     	
 		if(r != null)
 		{
@@ -192,12 +205,13 @@ public class SoundCloudRequest
 				
 				mState = State.REQUEST_TOKEN_OBTAINED;
 				
-				onSuccess.run();
+				return true;
 			} catch (IOException e)
 			{
 				e.printStackTrace();
 			}
 		}
+		return false;
 	}
 	
     /**
@@ -205,7 +219,7 @@ public class SoundCloudRequest
      */
 	public String getAuthorizeUrl()
 	{
-		return "http://soundcloud.com/oauth/authorize?oauth_token=" + mToken;
+		return mSoundCloudURL + "oauth/authorize?oauth_token=" + mToken;
 	}
 	
     /**
@@ -214,7 +228,7 @@ public class SoundCloudRequest
 	public void obtainAccessToken()
 	{
 		Form parameters = parametersForm();
-		Representation r = executeRequest("http://api.soundcloud.com/oauth/access_token", parameters);
+		Representation r = executeRequest(mSoundCloudApiURL + "oauth/access_token", parameters);
     	
 		if(r != null)
 		{
@@ -260,39 +274,32 @@ public class SoundCloudRequest
      * Uploads the file specified by the URI.
      * 
      */
-	void uploadFile(Uri uri)
+	boolean uploadFile(Uri uri, Bundle properties)
 	{
-		 File targetFile = new File(uri.getPath());
+		File targetFile = new File(uri.getPath());
 
-		 try
-		 {
-			 PostMethod filePost = new PostMethod("http://api.soundcloud.com/tracks");
+		try
+		{
+			PostMethod filePost = new PostMethod(mSoundCloudApiURL + "tracks");
 		
-			 filePost.addRequestHeader(new Header("Authorization", authorizationHeader("http://api.soundcloud.com/tracks", "POST")));
-
-			Part[] parts =
-			{
-				new StringPartMod("track[title]", "SoundCloud Droid Upload"),
-				new StringPartMod("track[sharing]", "private"),
-				new FilePart("track[asset_data]", targetFile)
-			};
-
-			ByteArrayOutputStream out = new ByteArrayOutputStream();
-			MultipartRequestEntity mre = new MultipartRequestEntity(parts, filePost.getParams());
-			mre.writeRequest(out);
-
-			filePost.setRequestEntity(
-                    mre
-                    );
-						
-			Log.d(getClass().toString(), "Request" + out.toString("UTF-8"));
+			filePost.addRequestHeader(new Header("Authorization", authorizationHeader(mSoundCloudApiURL + "tracks", "POST")));
 			
-			HttpClient client = new HttpClient();
-	        client.getHttpConnectionManager().getParams().setConnectionTimeout(50000);
-            int status = client.executeMethod(filePost);
+			Part[] parts = new Part[properties.size() + 1];
+			
+			int i=0;
+			for (String key : properties.keySet())
+				parts[i++] = new StringPartMod("track[" + key + "]", properties.getString(key));
+			
+			parts[i] = 	new FilePart("track[asset_data]", targetFile);
+
+			MultipartRequestEntity mre = new MultipartRequestEntity(parts, filePost.getParams());
+
+			filePost.setRequestEntity(mre);
+			
+            int status = mClient.executeMethod(filePost);
             if (status == HttpStatus.SC_CREATED) {
-                Log.d(getClass().toString(), "Upload complete, response=" + filePost.getResponseBodyAsString()
-                );
+                Log.d(getClass().toString(), "Upload complete, response=" + filePost.getResponseBodyAsString());
+                return true;
             } else {
                 Log.d(getClass().toString(),
                     "Upload failed, response=" + HttpStatus.getStatusText(status)
@@ -305,6 +312,7 @@ public class SoundCloudRequest
 		{
 			e.printStackTrace();
 		}
+		return false;
 	}
 	
 
@@ -313,14 +321,11 @@ public class SoundCloudRequest
 		GetMethod mePost;
 		try
 		{
-			mePost = new GetMethod("http://api.soundcloud.com/me");
+			mePost = new GetMethod(mSoundCloudApiURL + "me");
 
-			mePost.addRequestHeader(new Header("Authorization", authorizationHeader("http://api.soundcloud.com/me", "GET")));
+			mePost.addRequestHeader(new Header("Authorization", authorizationHeader(mSoundCloudApiURL + "me", "GET")));
 
-			HttpClient client = new HttpClient();
-			client.getHttpConnectionManager().getParams().setConnectionTimeout(5000);
-			
-			int status = client.executeMethod(mePost);
+			int status = mClient.executeMethod(mePost);
 	        if (status == HttpStatus.SC_OK)
 	        {
 	        	String response = mePost.getResponseBodyAsString();
@@ -404,6 +409,10 @@ public class SoundCloudRequest
 	{
 		return mState;
 	}
+	
+	String mSoundCloudURL;
+	String mSoundCloudApiURL;
+	
     // Consumer key and secret
     String mConsumerKey, mConsumerSecret;
     
@@ -411,6 +420,8 @@ public class SoundCloudRequest
     String mToken, mTokenSecret;
     
     State mState;
+    
+    HttpClient mClient = new HttpClient();
 }
 
 class StringPartMod extends StringPart

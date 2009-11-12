@@ -11,4 +11,9 @@ package org.urbanstew.SoundCloudDroid;
 // Declare the interface.
 interface ISoundCloudService
 {
+	String getUserName();
+	int getState();
+	boolean obtainRequestToken();
+	String getAuthorizeUrl();
+	void obtainAccessToken();
 }
