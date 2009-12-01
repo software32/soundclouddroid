@@ -9,6 +9,7 @@ import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.TextView;
 import android.widget.Toast;
 
 public class UploadActivity extends Activity
@@ -16,6 +17,7 @@ public class UploadActivity extends Activity
 	protected void onCreate(Bundle savedInstanceState)
 	{
         super.onCreate(savedInstanceState);
+        
         setContentView(R.layout.upload);
         
         mTitleEdit=(EditText)findViewById(R.id.title_edit);
@@ -30,6 +32,10 @@ public class UploadActivity extends Activity
 					chooseFile();
 				}
 	    	});
+        
+        mFileUri = (TextView) findViewById(R.id.file_uri);
+        if(getIntent().getAction().equals(Intent.ACTION_SEND))
+        	setFileUri((Uri)getIntent().getExtras().get(Intent.EXTRA_STREAM));
 	}
 	
     /**
@@ -67,9 +73,9 @@ public class UploadActivity extends Activity
     	soundCloudUpload.setData(mFile);
     	soundCloudUpload.putExtra("title", mTitleEdit.getText().toString());
 		startService(soundCloudUpload);
-		finish();
-    }    
-
+		finish();    	
+    }
+    
     /**
      * The method called when the file to be uploaded is selected.
      */
@@ -80,6 +86,8 @@ public class UploadActivity extends Activity
     		return;
     	
     	mFile = data.getData();
+        mFileUri.setText(mFile.toString());
+
     	mUploadButton
 	    	.setOnClickListener(new OnClickListener()
 	    	{
@@ -91,7 +99,15 @@ public class UploadActivity extends Activity
     	mUploadButton.setText("Upload File");
     }
 	
+    protected void setFileUri(Uri uri)
+    {
+    	mFile = uri;
+    	if(uri != null)
+        mFileUri.setText("Chosen file: " + mFile.toString());
+
+    }
 	EditText mTitleEdit;
 	Button mUploadButton;
+	TextView mFileUri;
 	Uri mFile; 
 }

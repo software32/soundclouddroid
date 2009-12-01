@@ -20,7 +20,7 @@ import android.util.Log;
 
 public class SoundCloudService extends android.app.Service
 {
-	public final static boolean useSandbox = false;
+	public final static boolean useSandbox = true;
 	
 	public void onCreate()
 	{

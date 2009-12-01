@@ -4,4 +4,4 @@ SoundCloudDroid/bin/*
 SoundCloudDroid/gen/*
 .classpath
 .project
-
+default.properties

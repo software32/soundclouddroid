@@ -138,8 +138,6 @@ public class SoundCloudRequest
 		{
     		signRequest(resourceUrl, parameters, "POST");
 
-	    	//Log.d(this.getClass().toString(), "Making POST request: " + parameters.getWebRepresentation());
-	    	//Log.d(this.getClass().toString(), "POST request contents: " + parameters.getWebRepresentation().getText());
 			Representation r = resource.post(parameters.getWebRepresentation());
 			boolean success = resource.getStatus().isSuccess();
 			Log.d(this.getClass().toString(), resource.getStatus().toString());
@@ -155,8 +153,6 @@ public class SoundCloudRequest
 	
 	void signRequest(String resourceUrl, Form parameters, String method)
 	{
-//		if(resourceUrl.startsWith("http://api.sandbox-"))
-//			resourceUrl = resourceUrl.replaceFirst("http://api.sandbox-", "http://api.");
 		// construct the Signature Base String
 		try
 		{
@@ -318,17 +314,17 @@ public class SoundCloudRequest
 
 	String retreiveMe()
 	{
-		GetMethod mePost;
+		GetMethod meGet;
 		try
 		{
-			mePost = new GetMethod(mSoundCloudApiURL + "me");
+			meGet = new GetMethod(mSoundCloudApiURL + "me");
 
-			mePost.addRequestHeader(new Header("Authorization", authorizationHeader(mSoundCloudApiURL + "me", "GET")));
+			meGet.addRequestHeader(new Header("Authorization", authorizationHeader(mSoundCloudApiURL + "me", "GET")));
 
-			int status = mClient.executeMethod(mePost);
+			int status = mClient.executeMethod(meGet);
 	        if (status == HttpStatus.SC_OK)
 	        {
-	        	String response = mePost.getResponseBodyAsString();
+	        	String response = meGet.getResponseBodyAsString();
 	            return response;
 	        }
 	        else

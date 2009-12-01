@@ -18,9 +18,15 @@
 
 	    <activity android:name="SettingsActivity"></activity>
 	    
-	    <activity android:name="UploadsActivity"></activity>
+	    <activity android:name="UploadsActivity">
+	    </activity>
 
-	    <activity android:name="UploadActivity"></activity>
+	    <activity android:name="UploadActivity"><intent-filter><action android:name="android.intent.action.SEND"></action>
+<data android:mimeType="audio/*">
+		</data>
+		<category android:name="android.intent.category.DEFAULT"/>
+</intent-filter>
+</activity>
 
 	    <service android:name="SoundCloudService">
 			<intent-filter>
