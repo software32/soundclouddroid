@@ -7,7 +7,7 @@
     android:layout_width="fill_parent" 
     android:layout_height="wrap_content"
     android:layout_alignParentTop="true"
-	android:text="Welcome to SoundCloud Droid 0.3 alpha.\nThis release is meant only for alpha testing.  You should be able to:\n\n* authorize the app by logging into SoundCloud\n* see your SoundCloud username after logging in\n* upload a file to SoundCloud\n* send a file to SoundCloud from any app that uses the Android SEND intent with an audio mime-type\n* view the status of current and past uploads\n\nPlease report any problems or feature requests using the MENU."
+	android:text="Welcome to SoundCloud Droid 0.4 alpha.\nThis release is meant only for alpha testing.  You should be able to:\n\n* authorize the app by logging into SoundCloud\n* see your SoundCloud username after logging in\n* upload a file to SoundCloud\n* send a file to SoundCloud from any app that uses the Android SEND intent with an audio mime-type\n* view the status of current and past uploads\n\nPlease report any problems or feature requests using the MENU."
 	android:textAppearance="?android:attr/textAppearanceSmall"
 />
 <LinearLayout
