@@ -1,5 +1,10 @@
 package org.urbanstew.SoundCloudDroid;
 
+import org.urbanstew.soundcloudapi.SoundCloudAPI;
+import org.urbanstew.util.AppDataAccess;
+
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
@@ -23,6 +28,7 @@ import android.widget.TextView;
  */
 public class SoundCloudDroid extends ServiceActivity
 {
+	public static float CURRENT_VERSION = 0.6f;
 	/**
      * The method called when the Activity is created.
      * <p>
@@ -62,6 +68,25 @@ public class SoundCloudDroid extends ServiceActivity
 				startActivity(new Intent(getApplication(), UploadsActivity.class));					
 			}
     	});
+        
+        final AppDataAccess appData = new AppDataAccess(this);
+        if(appData.getVisitedVersion() == 0)
+        {
+        	new AlertDialog.Builder(this)
+        	.setTitle("License")
+        	.setMessage(getString(R.string.license))
+        	.setPositiveButton
+        	(
+        		getString(android.R.string.ok),
+        		new DialogInterface.OnClickListener()
+        		{
+					public void onClick(DialogInterface dialog, int which)
+					{
+	        			appData.setVisitedVersion(CURRENT_VERSION);
+					}
+        		}
+        	).show();
+        }
     }
         
     /**
@@ -87,6 +112,7 @@ public class SoundCloudDroid extends ServiceActivity
         mReport = menu.add("Report defect or feature request").setIcon(android.R.drawable.ic_dialog_alert);
         mJoinGroup = menu.add("Join discussion group").setIcon(android.R.drawable.ic_dialog_email);
         //mSettingsMenuItem = menu.add("Preferences").setIcon(android.R.drawable.ic_menu_preferences);
+        mManualMenuItem = menu.add("Read the manual").setIcon(android.R.drawable.ic_menu_manage);
         return true;
     }
     
@@ -103,6 +129,8 @@ public class SoundCloudDroid extends ServiceActivity
     		startActivity(new Intent(Intent.ACTION_VIEW).setData(Uri.parse("http://groups.google.com/group/soundcloud-droid/subscribe")));
     	else if(item == mSettingsMenuItem)
     		startActivity(new Intent(getApplication(), SettingsActivity.class));
+    	else if(item == mManualMenuItem)
+    		startActivity(new Intent(Intent.ACTION_VIEW).setData(Uri.parse("http://urbanstew.org/soundclouddroid/manual.html")));
     	else
     		return false;
     	return true;
@@ -117,24 +145,24 @@ public class SoundCloudDroid extends ServiceActivity
     	else
     		try
     		{
-    			if(mSoundCloudService.getState() == SoundCloudRequest.State.AUTHORIZED.ordinal())
+    			if(mSoundCloudService.getState() == SoundCloudAPI.State.AUTHORIZED.ordinal())
     			{
     				String userName = mSoundCloudService.getUserName();
     				if(userName.length()>0)
-    					text = "authorized as " + mSoundCloudService.getUserName();
+    					text = "SoundCloud Droid is authorized as " + mSoundCloudService.getUserName() + ".";
     				else
-    					text = "unable to verify authorization";
+    					text = "SoundCloud Droid is unable to verify the authorization.";
     				mAuthorizeButton.setText("Re-authorize");
     			}
     			else
     			{
-    	        	text = "unauthorized";
+    	        	text = "Please use the Authorize button to authorize SoundCloud Droid for SoundCloud access.";
     	        	mAuthorizeButton.setText("Authorize");
     			}
     			buttonEnabled = true;
     		} catch (RemoteException e)
 			{
-				text = "problem accessing SoundCloud service";
+				text = "There was a problem accessing SoundCloud.";
 				buttonEnabled = false;
 			}
 		mAuthorized.setText(text);
@@ -153,7 +181,7 @@ public class SoundCloudDroid extends ServiceActivity
     
     Button mAuthorizeButton;
     
-    MenuItem mView, mReport, mJoinGroup, mSettingsMenuItem;
+    MenuItem mView, mReport, mJoinGroup, mSettingsMenuItem, mManualMenuItem;
 
 	protected void onServiceConnected()
 	{

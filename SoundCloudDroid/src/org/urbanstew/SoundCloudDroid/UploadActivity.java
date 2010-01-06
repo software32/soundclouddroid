@@ -7,10 +7,15 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
 import android.view.View.OnClickListener;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.ViewAnimator;
+import android.widget.AdapterView.OnItemSelectedListener;
 
 public class UploadActivity extends Activity
 {
@@ -20,6 +25,8 @@ public class UploadActivity extends Activity
         
         setContentView(R.layout.upload);
         
+    	mUploadIntent = new Intent(this, SoundCloudService.class);
+
         mTitleEdit=(EditText)findViewById(R.id.title_edit);
         mTitleEdit.selectAll();
         
@@ -33,11 +40,92 @@ public class UploadActivity extends Activity
 				}
 	    	});
         
+        mTextAttribute = (EditText) findViewById(R.id.text_attribute);
+        mSpinnerAttribute = (Spinner) findViewById(R.id.spinner_attribute);
+        mAnimator = (ViewAnimator) findViewById(R.id.animator);
+        	
+        ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(
+                this, R.array.attributes, android.R.layout.simple_spinner_item);
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        mExtraAttribute = (Spinner) findViewById(R.id.extra_attributes);
+        mExtraAttribute.setAdapter(adapter);
+        mExtraAttribute.setOnItemSelectedListener(new OnItemSelectedListener()
+        {
+			public void onItemSelected(AdapterView<?> arg0, View arg1,
+					int position, long id)
+			{
+				commitSelectedAttribute();
+				switch(position)
+				{
+				case 0:
+					selectedSpinnerAttribute("sharing", R.array.sharing_options);
+					break;
+				case 1:
+					selectedTextAttribute("description");
+					break;
+				case 2:
+					selectedTextAttribute("genre");
+					break;
+				case 3:
+					selectedSpinnerAttribute("track_type", R.array.track_type_options);
+				}
+				mLastExtraAttributePosition = position;
+			}
+
+			public void onNothingSelected(AdapterView<?> arg0)
+			{
+				commitSelectedAttribute();
+			}
+        });
+        
         mFileUri = (TextView) findViewById(R.id.file_uri);
-        if(getIntent().getAction().equals(Intent.ACTION_SEND))
+        if(getIntent() != null && getIntent().getAction() != null && getIntent().getAction().equals(Intent.ACTION_SEND) && getIntent().getExtras().containsKey(Intent.EXTRA_STREAM))
         	setFileUri((Uri)getIntent().getExtras().get(Intent.EXTRA_STREAM));
 	}
 	
+	void commitSelectedAttribute()
+	{
+		switch(mLastExtraAttributePosition)
+		{
+		case 0:
+			mUploadIntent.putExtra("sharing", (CharSequence)mSpinnerAttribute.getSelectedItem());
+			break;
+		case 1:
+			mUploadIntent.putExtra("description", mTextAttribute.getText().toString());
+			break;
+		case 2:
+			mUploadIntent.putExtra("genre", mTextAttribute.getText().toString());
+			break;
+		case 3:
+			mUploadIntent.putExtra("track_type", (CharSequence)mSpinnerAttribute.getSelectedItem());
+			break;					
+		}
+		mLastExtraAttributePosition = Spinner.INVALID_POSITION;
+	}
+	void selectedTextAttribute(String parameter)
+	{
+		if(mUploadIntent.hasExtra(parameter))
+			mTextAttribute.setText(mUploadIntent.getStringExtra(parameter));
+		else
+			mTextAttribute.setText("");
+		mAnimator.setDisplayedChild(1); // text
+	}
+	
+	void selectedSpinnerAttribute(String parameter, int options)
+	{
+		ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(
+                this, options, android.R.layout.simple_spinner_item);
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        mSpinnerAttribute.setAdapter(adapter);
+		mAnimator.setDisplayedChild(0); // spinner
+		if(mUploadIntent.hasExtra(parameter))
+			for(int i=0; i<adapter.getCount(); i++)
+				if(mUploadIntent.getStringExtra(parameter).equals(adapter.getItem(i)))
+				{
+					mSpinnerAttribute.setSelection(i);
+					break;
+				}
+	}
     /**
      * The method called when the upload button is pressed.
      * <p>
@@ -69,11 +157,11 @@ public class UploadActivity extends Activity
      */
     public void uploadFile()
     {
-    	Intent soundCloudUpload = new Intent(this, SoundCloudService.class);
-    	soundCloudUpload.setData(mFile);
-    	soundCloudUpload.putExtra("title", mTitleEdit.getText().toString());
-		startService(soundCloudUpload);
-		finish();    	
+    	commitSelectedAttribute();
+    	mUploadIntent.setData(mFile);
+    	mUploadIntent.putExtra("title", mTitleEdit.getText().toString());
+		startService(mUploadIntent);
+		finish();
     }
     
     /**
@@ -85,10 +173,16 @@ public class UploadActivity extends Activity
     	if(data == null)
     		return;
     	
-    	mFile = data.getData();
-        mFileUri.setText(mFile.toString());
-
-    	mUploadButton
+    	setFileUri(data.getData());
+    }
+	
+    protected void setFileUri(Uri uri)
+    {
+    	mFile = uri;
+    	if(uri != null)
+    	{
+    		mFileUri.setText("Chosen file: " + mFile.toString());
+    		mUploadButton
 	    	.setOnClickListener(new OnClickListener()
 	    	{
 	    		public void onClick(View arg0)
@@ -96,18 +190,17 @@ public class UploadActivity extends Activity
 	    			uploadFile();
 	    		}
 	    	});
-    	mUploadButton.setText("Upload File");
+    		mUploadButton.setText("Upload File");
+    	}
     }
-	
-    protected void setFileUri(Uri uri)
-    {
-    	mFile = uri;
-    	if(uri != null)
-        mFileUri.setText("Chosen file: " + mFile.toString());
-
-    }
-	EditText mTitleEdit;
+    
+    Intent mUploadIntent;
+    
+    int mLastExtraAttributePosition = Spinner.INVALID_POSITION;
+	EditText mTitleEdit, mTextAttribute;
 	Button mUploadButton;
 	TextView mFileUri;
+	Spinner mExtraAttribute, mSpinnerAttribute;
+	ViewAnimator mAnimator;
 	Uri mFile; 
 }

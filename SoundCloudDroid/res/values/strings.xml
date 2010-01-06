@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="hello">Hello World, SoundCloudDroid!</string>
     <string name="app_name">SoundCloud Droid</string>
+    <string name="enter_title">Enter Title</string>
+    <string name="choose_file">Choose File</string>
+    <string name="extra_attributes_prompt">Extra Attributes</string>
+	<string name="license">Welcome to SoundCloud Droid!\n\nBy using this application, you agree to the following license:\n\nSoundCloud Droid\nCopyright (C) 2009,2010 urbanSTEW\n\nThis program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.\n\nThis program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.\n\nSee http://www.gnu.org/licenses/ for a full text of the license.\n\nSee http://urbanstew.org/soundclouddroid/ for links to source code and documentation.\n\n</string>
 </resources>

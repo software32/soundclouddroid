@@ -13,7 +13,6 @@ interface ISoundCloudService
 {
 	String getUserName();
 	int getState();
-	boolean obtainRequestToken();
-	String getAuthorizeUrl();
-	void obtainAccessToken();
+	String obtainRequestToken();
+	void obtainAccessToken(String verificationCode);
 }

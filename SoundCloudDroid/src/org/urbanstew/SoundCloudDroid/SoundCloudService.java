@@ -1,13 +1,21 @@
 package org.urbanstew.SoundCloudDroid;
 
-import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.util.List;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
+import org.apache.http.HttpResponse;
+import org.apache.http.HttpStatus;
+import org.urbanstew.soundcloudapi.SoundCloudAPI;
 import org.w3c.dom.Document;
 
+import android.app.Notification;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.content.ContentValues;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
@@ -16,7 +24,8 @@ import android.os.IBinder;
 import android.os.RemoteException;
 import android.preference.PreferenceManager;
 import android.util.Log;
-
+import org.apache.http.NameValuePair;
+import org.apache.http.message.BasicNameValuePair;
 
 public class SoundCloudService extends android.app.Service
 {
@@ -44,39 +53,66 @@ public class SoundCloudService extends android.app.Service
 	{
 		final Bundle extras = intent.getExtras() == null ? new Bundle() : intent.getExtras();
 
-    	final Uri path = intent.getData();
-    	Log.d(getClass().getName(), "Uploading file:" + path);
+		Log.d(getClass().getName(), "Uploading file data:" + intent.getData().getPath());
+    	final File file = new File(intent.getData().getPath());
+    	Log.d(getClass().getName(), "Uploading file:" + file.getAbsolutePath());
     	
 		if(!extras.containsKey("title"))
 			extras.putString("title", "Uploaded from SoundCloud Droid service");
 
     	ContentValues values = new ContentValues();
-    	values.put(DB.Uploads.TITLE, intent.getExtras().getString("title"));
+    	final String title = intent.getExtras().getString("title");
+    	values.put(DB.Uploads.TITLE, title);
     	values.put(DB.Uploads.STATUS, "uploading");
-    	values.put(DB.Uploads.PATH, path.toString());
+    	values.put(DB.Uploads.PATH, file.getAbsolutePath());
 
     	// insert the values
     	final Uri upload = getContentResolver().insert(DB.Uploads.CONTENT_URI, values);
 
-    	final SoundCloudRequest request = new SoundCloudRequest(mSoundCloud);
+    	final SoundCloudAPI request = new SoundCloudAPI(mSoundCloud);
 
     	new Thread(new Runnable()
     	{
 			public void run()
 			{
-				String newStatus;
-	    		if(request.uploadFile(path, extras))
-	    			newStatus = "uploaded";
-	    		else
-	    			newStatus = "error";
+				List<NameValuePair> params = new java.util.ArrayList<NameValuePair>();
+
+				for (String key : extras.keySet())
+					params.add(new BasicNameValuePair("track["+key+"]", extras.getString(key)));
+				boolean success = false;
+				NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+	    		try
+				{
+					if(request.upload(file, params).getStatusLine().getStatusCode() == HttpStatus.SC_CREATED)
+						success = true;
+				} catch (Exception e)
+				{
+				}
 	    		ContentValues values = new ContentValues();
-	        	values.put(DB.Uploads.STATUS, newStatus);
+	        	values.put(DB.Uploads.STATUS, success ? "uploaded" : "error");
 	    		getContentResolver().update(upload, values, null, null);
+	    		
+	    		String notificationString = title + " upload " + (success ? "completed" : "failed");
+	    		Notification notification = new Notification
+	    		(
+	    			success ? android.R.drawable.stat_sys_upload_done : android.R.drawable.stat_notify_error,
+	    			notificationString,
+	    			System.currentTimeMillis()
+	    		);			
+	    		notification.setLatestEventInfo
+	    		(
+	    			getApplicationContext(),
+	    			"SoundCloud Droid",
+	    			notificationString,
+	    			PendingIntent.getActivity(getApplicationContext(), 0, new Intent(getApplicationContext(), UploadsActivity.class), 0)
+	    		);
+	    		notification.flags |= Notification.FLAG_AUTO_CANCEL;
+	    		nm.notify(0, notification);
 			}
     	}).start();
 	}
 
-	SoundCloudRequest newSoundCloudRequest()
+	SoundCloudAPI newSoundCloudRequest()
 	{
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
         // WARNING: the following resources are not a part of the repository for security reasons
@@ -96,32 +132,38 @@ public class SoundCloudService extends android.app.Service
         	consumerSecret  = getResources().getString(R.string.sandbox_consumer_secret);        	
         }
 
-    	SoundCloudRequest soundCloud = new SoundCloudRequest
+    	SoundCloudAPI soundCloud = new SoundCloudAPI
     	(
     		consumerKey,
     		consumerSecret,
     		preferences.getString("oauth_access_token", ""),
-    		preferences.getString("oauth_access_token_secret", "")
+    		preferences.getString("oauth_access_token_secret", ""),
+    		(useSandbox ? SoundCloudAPI.USE_SANDBOX : SoundCloudAPI.USE_PRODUCTION).with(SoundCloudAPI.OAuthVersion.V1_0)
     	);
-    	
-    	soundCloud.setUsingSandbox(useSandbox);
-    	
+    	    	
     	return soundCloud;
 	}
 	
 	String getUserName()
 	{    	
-    	String response = mSoundCloud.retreiveMe();
+    	HttpResponse response;
+		try
+		{
+			response = mSoundCloud.get("me");
+		} catch (Exception e)
+		{
+			return "";
+		}
     	
     	Log.d(getClass().toString(), "Me complete, response=" + response);
-    	if(response.length()==0)
-    		return response;
+    	if(response.getStatusLine().getStatusCode() != 200)
+    		return "";
 
 		try {
 
     			DocumentBuilder db = DocumentBuilderFactory.newInstance().newDocumentBuilder();
 
-    			Document dom = db.parse(new ByteArrayInputStream(response.getBytes("UTF-8")));
+    			Document dom = db.parse(response.getEntity().getContent());
     			
     			return dom.getElementsByTagName("username").item(0).getFirstChild().getNodeValue();
 		}catch(Exception e) {
@@ -150,27 +192,33 @@ public class SoundCloudService extends android.app.Service
 			return SoundCloudService.this.mSoundCloud.getState().ordinal();
 		}
 
-		public String getAuthorizeUrl() throws RemoteException
+		public String obtainRequestToken() throws RemoteException
 		{
-			return SoundCloudService.this.mSoundCloud.getAuthorizeUrl();
+			try
+			{
+				return SoundCloudService.this.mSoundCloud.obtainRequestToken();
+			} catch (Exception e)
+			{
+				return null;
+			}
 		}
 
-		public boolean obtainRequestToken() throws RemoteException
+		public void obtainAccessToken(String verificationCode) throws RemoteException
 		{
-			return SoundCloudService.this.mSoundCloud.obtainRequestToken();
-		}
-
-		public void obtainAccessToken() throws RemoteException
-		{
-			SoundCloudService.this.mSoundCloud.obtainAccessToken();
+			try
+			{
+				SoundCloudService.this.mSoundCloud.obtainAccessToken(verificationCode);
+		        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(SoundCloudService.this);
+		    	preferences.edit()
+		    	.putString("oauth_access_token", mSoundCloud.getToken())
+		    	.putString("oauth_access_token_secret", mSoundCloud.getTokenSecret())
+		    	.commit();
+			} catch (Exception e)
+			{
+			}
 			
-	        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(SoundCloudService.this);
-	    	preferences.edit()
-	    	.putString("oauth_access_token", mSoundCloud.getToken())
-	    	.putString("oauth_access_token_secret", mSoundCloud.getTokenSecret())
-	    	.commit();
 	    }
     };
     
-    SoundCloudRequest mSoundCloud;
+    SoundCloudAPI mSoundCloud;
 }

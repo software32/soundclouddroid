@@ -4,37 +4,22 @@
     android:layout_height="fill_parent"
     >
 <TextView
+	android:id="@+id/welcome"
     android:layout_width="fill_parent" 
     android:layout_height="wrap_content"
     android:layout_alignParentTop="true"
-	android:text="Welcome to SoundCloud Droid 0.4 alpha.\nThis release is meant only for alpha testing.  You should be able to:\n\n* authorize the app by logging into SoundCloud\n* see your SoundCloud username after logging in\n* upload a file to SoundCloud\n* send a file to SoundCloud from any app that uses the Android SEND intent with an audio mime-type\n* view the status of current and past uploads\n\nPlease report any problems or feature requests using the MENU."
+	android:text="Welcome to SoundCloud Droid 0.6.0 beta.\nPlease use the MENU to access the manual, or to report any problems or feature requests."
 	android:textAppearance="?android:attr/textAppearanceSmall"
+	android:padding="10dip"
+    android:gravity="center"
 />
 <LinearLayout
+	android:id="@+id/buttons"
 	android:orientation="vertical"
     android:layout_width="fill_parent"
     android:layout_height="wrap_content"
     android:layout_alignParentBottom="true"
     >
-<LinearLayout
-	android:orientation="horizontal"
-    android:layout_width="fill_parent"
-    android:layout_height="wrap_content"
-    android:gravity="center"
-    >
-<TextView
-    android:layout_width="wrap_content" 
-    android:layout_height="wrap_content"
-	android:text="Authorization status: "
-	android:textAppearance="?android:attr/textAppearanceSmall"
-/>
-<TextView
-	android:id="@+id/authorization_status"
-    android:layout_width="wrap_content" 
-    android:layout_height="wrap_content"
-	android:text=""
-/>
-</LinearLayout>
 <Button
 	android:id="@+id/authorize_button"
 	android:text="Click here to (re)authorize"
@@ -43,7 +28,7 @@
 	/>
 <Button
 	android:id="@+id/upload_button"
-	android:text="Upload file to SoundCloud"
+	android:text="Upload File to SoundCloud"
     android:layout_width="fill_parent" 
     android:layout_height="wrap_content"
 	/>
@@ -54,4 +39,14 @@
     android:layout_height="wrap_content"
 	/>
 </LinearLayout>
+<TextView
+	android:id="@+id/authorization_status"
+    android:layout_width="fill_parent" 
+    android:layout_height="wrap_content"
+    android:layout_below="@id/welcome"    
+    android:layout_above="@id/buttons"
+	android:text=""
+    android:gravity="center"
+	android:background="@android:drawable/dialog_frame"
+/>
 </RelativeLayout>

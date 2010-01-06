@@ -48,7 +48,7 @@ public class ObtainAccessToken extends ServiceActivity
     {
     	try
 		{
-			mSoundCloudService.obtainAccessToken();
+			mSoundCloudService.obtainAccessToken(null);
 	    	finish();
 		} catch (RemoteException e)
 		{
@@ -68,9 +68,10 @@ public class ObtainAccessToken extends ServiceActivity
 	{
         try
 		{
-			if (mSoundCloudService.obtainRequestToken())
+        	String url = mSoundCloudService.obtainRequestToken();
+			if (url != null)
 			{
-				mWebView.loadUrl(mSoundCloudService.getAuthorizeUrl());
+				mWebView.loadUrl(url);
 				return;
 			}
 		} catch (RemoteException e)
