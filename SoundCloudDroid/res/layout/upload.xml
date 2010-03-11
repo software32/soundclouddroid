@@ -22,6 +22,8 @@
     android:layout_height="wrap_content">
 <TextView
 	android:id="@+id/file_uri"
+	android:paddingLeft="7dip"
+	android:paddingRight="7dip"
 	android:singleLine="false"
     android:layout_width="fill_parent" 
     android:layout_height="wrap_content"

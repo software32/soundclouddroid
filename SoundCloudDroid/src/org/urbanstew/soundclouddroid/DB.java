@@ -22,14 +22,14 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.urbanstew.SoundCloudDroid;
+package org.urbanstew.soundclouddroid;
 
 import android.net.Uri;
 import android.provider.BaseColumns;
 
 public class DB
 {
-    public static final String AUTHORITY = "org.urbanstew.provider.SoundCloudDroid";
+    public static final String AUTHORITY = "org.urbanstew.provider.soundclouddroid";
 
     // This class cannot be instantiated
     private DB() {}
@@ -59,6 +59,10 @@ public class DB
         public static final String TITLE = "title";
         public static final String PATH = "path";
         public static final String STATUS = "status";
+        public static final String SHARING = "sharing";
+        public static final String DESCRIPTION = "description";
+        public static final String GENRE = "genre";
+        public static final String TRACK_TYPE = "track_type";
         
         public static final String DEFAULT_SORT_ORDER = _ID + " DESC";
     }

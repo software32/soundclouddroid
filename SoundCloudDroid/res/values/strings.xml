@@ -5,4 +5,16 @@
     <string name="choose_file">Choose File</string>
     <string name="extra_attributes_prompt">Extra Attributes</string>
 	<string name="license">Welcome to SoundCloud Droid!\n\nBy using this application, you agree to the following license:\n\nSoundCloud Droid\nCopyright (C) 2009,2010 urbanSTEW\n\nThis program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.\n\nThis program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.\n\nSee http://www.gnu.org/licenses/ for a full text of the license.\n\nSee http://urbanstew.org/soundclouddroid/ for links to source code and documentation.\n\n</string>
+	<string name="welcome_to_soundcloiddroid">Welcome to SoundCloud Droid 1.0.0.\nPlease use the MENU to access the manual, or to report any problems or feature requests.</string>
+	<string name="unable_to_verify_connection">Unable to verify connection with SoundCloud.</string>
+	<string name="please_connect">Please connect with SoundCloud.</string>
+	<string name="verifying_connection">Verifying connection with SoundCloud...</string>
+	<string name="connected_as">Connected to SoundCloud as</string>
+	<string name="select_an_upload">Select an upload to retry or repeat it.</string>
+	<string name="no_uploads">There are no uploads to display.</string>
+	<string name="warning">Warning</string>
+	<string name="warning_3gpp_upload">SoundCloud might not be able to process 3gpp audio files.\n\nYou can record WAV audio files using Rehearsal Assistant and upload those instead.</string>
+	<string name="ok">OK</string>
+	<string name="never_show">never show this warning again</string>
+	<string name="unauthorized_upload">Please Connect with SoundCloud before uploading.\n\nYou may retry this upload via "View Upload Status".</string>
 </resources>

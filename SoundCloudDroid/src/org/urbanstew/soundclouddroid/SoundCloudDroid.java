@@ -1,18 +1,26 @@
-package org.urbanstew.SoundCloudDroid;
+package org.urbanstew.soundclouddroid;
 
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+
+import org.apache.http.HttpResponse;
 import org.urbanstew.soundcloudapi.SoundCloudAPI;
 import org.urbanstew.util.AppDataAccess;
+import org.w3c.dom.Document;
 
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.RemoteException;
+import android.preference.PreferenceManager;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
+import android.widget.ImageButton;
 import android.widget.Button;
 import android.widget.TextView;
 
@@ -26,9 +34,9 @@ import android.widget.TextView;
  * 
  * @author      Stjepan Rajko
  */
-public class SoundCloudDroid extends ServiceActivity
+public class SoundCloudDroid extends SoundCloudActivity implements SoundCloudRequestClient
 {
-	public static float CURRENT_VERSION = 0.6f;
+	public static float CURRENT_VERSION = 0.7f;
 	/**
      * The method called when the Activity is created.
      * <p>
@@ -41,8 +49,7 @@ public class SoundCloudDroid extends ServiceActivity
         
         mAuthorized = (TextView) findViewById(R.id.authorization_status);
 
-        mAuthorizeButton = (Button) findViewById(R.id.authorize_button);
-        mAuthorizeButton
+        ((ImageButton) findViewById(R.id.authorize_button))
         	.setOnClickListener(new OnClickListener()
 	        {
 				public void onClick(View arg0)
@@ -87,6 +94,35 @@ public class SoundCloudDroid extends ServiceActivity
         		}
         	).show();
         }
+        
+		final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+    	if(preferences.getBoolean("check_old_version", true))
+    	{
+	        try
+	        {
+	        	getPackageManager().getPackageInfo("org.urbanstew.SoundCloudDroid", 0);
+	        	
+	        	new AlertDialog.Builder(this)
+	        	.setTitle("Package Name Changed")
+	        	.setMessage("For reasons beyond our control, we had to change the package name for version 1.0 of SoundCloud Droid.\n\nThis means you have to manually uninstall your old version of SoundCloud Droid. Select OK to do so.")
+	        	.setPositiveButton
+	        	(
+	        		getString(android.R.string.ok),
+	        		new DialogInterface.OnClickListener()
+	        		{
+						public void onClick(DialogInterface dialog, int which)
+						{
+						    Intent intent = new Intent(Intent.ACTION_DELETE, Uri.fromParts("package", "org.urbanstew.SoundCloudDroid", null)); 
+						    startActivity(intent);
+		    		    	preferences.edit().putBoolean("check_old_version", false).commit();
+						}
+	        		}
+	        	).show();
+	        } catch(PackageManager.NameNotFoundException e)
+	        {
+		    	preferences.edit().putBoolean("check_old_version", false).commit();
+	        }
+    	}
     }
         
     /**
@@ -99,6 +135,12 @@ public class SoundCloudDroid extends ServiceActivity
     {
     	super.onResume();
     	updateAuthorizationStatus();
+    }
+    
+    public void onDestroy()
+    {
+    	super.onDestroy();
+    	getSCApplication().cancel(this);
     }
     
     /**
@@ -138,36 +180,25 @@ public class SoundCloudDroid extends ServiceActivity
     
     public void updateAuthorizationStatus()
     {
-    	String text;
-    	boolean buttonEnabled = false;
-    	if(mSoundCloudService==null)
-    		text = "connecting to SoundCloud service...";
-    	else
-    		try
-    		{
-    			if(mSoundCloudService.getState() == SoundCloudAPI.State.AUTHORIZED.ordinal())
-    			{
-    				String userName = mSoundCloudService.getUserName();
-    				if(userName.length()>0)
-    					text = "SoundCloud Droid is authorized as " + mSoundCloudService.getUserName() + ".";
-    				else
-    					text = "SoundCloud Droid is unable to verify the authorization.";
-    				mAuthorizeButton.setText("Re-authorize");
-    			}
-    			else
-    			{
-    	        	text = "Please use the Authorize button to authorize SoundCloud Droid for SoundCloud access.";
-    	        	mAuthorizeButton.setText("Authorize");
-    			}
-    			buttonEnabled = true;
-    		} catch (RemoteException e)
+    	int text;
+
+		if(getSoundCloudAPI().getState() == SoundCloudAPI.State.AUTHORIZED)
+		{
+			if(mUserName != null)
 			{
-				text = "There was a problem accessing SoundCloud.";
-				buttonEnabled = false;
+				setUserName(mUserName);
+				return;
 			}
+			getSCApplication().processRequest("me", this);
+			text = R.string.verifying_connection;
+		}
+		else
+		{
+			text = R.string.please_connect;
+		}
+		
 		mAuthorized.setText(text);
-		mAuthorizeButton.setEnabled(buttonEnabled);
-    }
+	}
     
     public void authorize()
     {
@@ -175,18 +206,63 @@ public class SoundCloudDroid extends ServiceActivity
 		startActivity(authorizeIntent);
     }
     
-    // indicating whether SoundCloud Droid has been authorized
-    // to access a user account
-    TextView mAuthorized;
-    
-    Button mAuthorizeButton;
-    
-    MenuItem mView, mReport, mJoinGroup, mSettingsMenuItem, mManualMenuItem;
-
 	protected void onServiceConnected()
 	{
 		updateAuthorizationStatus();
 	}
+
+	public void setUserName(String userName)
+	{
+		mUserName = userName;
+		
+		String text;
+		
+		if(userName != null)
+			text = getString(R.string.connected_as) + " " + userName + ".";
+		else
+			text = getString(R.string.unable_to_verify_connection);
+		mAuthorized.setText(text);
+	}
+
+	public void requestCompleted(HttpResponse response)
+	{
+		String userName = null;
+
+    	if(response.getStatusLine().getStatusCode() == 200)
+			try {
+	
+	    			DocumentBuilder db = DocumentBuilderFactory.newInstance().newDocumentBuilder();
+	
+	    			Document dom = db.parse(response.getEntity().getContent());
+	    			
+	    			userName = dom.getElementsByTagName("username").item(0).getFirstChild().getNodeValue();
+			}catch(Exception e) {
+				e.printStackTrace();
+			}
+		
+		final String finalUserName = userName;
+		runOnUiThread(new Runnable()
+		{
+			public void run()
+			{
+				setUserName(finalUserName);
+			}			
+		});
+	}
+
+	public void requestFailed(Exception e)
+	{
+		mAuthorized.setText(R.string.unable_to_verify_connection);
+	}
+	
+    // indicating whether SoundCloud Droid has been authorized
+    // to access a user account
+    TextView mAuthorized;
+
+    MenuItem mView, mReport, mJoinGroup, mSettingsMenuItem, mManualMenuItem;
+    
+    static String mUserName = null;
+
 }
 
 

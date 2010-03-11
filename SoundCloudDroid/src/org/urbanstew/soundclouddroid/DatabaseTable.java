@@ -1,4 +1,4 @@
-package org.urbanstew.SoundCloudDroid;
+package org.urbanstew.soundclouddroid;
 
 public class DatabaseTable
 {

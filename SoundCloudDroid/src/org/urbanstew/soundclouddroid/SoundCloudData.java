@@ -1,4 +1,4 @@
-package org.urbanstew.SoundCloudDroid;
+package org.urbanstew.soundclouddroid;
 
 import android.content.ContentProvider;
 import android.content.ContentUris;
@@ -27,13 +27,13 @@ public class SoundCloudData extends ContentProvider {
 	}
 		
 
-	enum Uploads { _ID, TITLE, PATH }
+	enum Uploads { _ID, TITLE, PATH, SHARING, DESCRIPTION, GENRE, TRACK_TYPE}
 	
 	private static class DatabaseHelper extends SQLiteOpenHelper
 	{
 		DatabaseHelper(Context context)
 		{
-			super(context, "soundcloud_droid.db", null, 9);
+			super(context, "soundcloud_droid.db", null, 10);
 			mContext = context;
 		}
 
@@ -48,7 +48,11 @@ public class SoundCloudData extends ContentProvider {
 					+ DB.Uploads._ID + " INTEGER PRIMARY KEY,"
 					+ DB.Uploads.TITLE + " TEXT,"
 					+ DB.Uploads.PATH + " TEXT,"
-					+ DB.Uploads.STATUS + " TEXT"
+					+ DB.Uploads.STATUS + " TEXT,"
+					+ DB.Uploads.SHARING + " TEXT,"
+					+ DB.Uploads.DESCRIPTION + " TEXT,"
+					+ DB.Uploads.GENRE + " TEXT,"
+					+ DB.Uploads.TRACK_TYPE + " TEXT"
 					+ ");");
 		}
 		
@@ -85,6 +89,7 @@ public class SoundCloudData extends ContentProvider {
         	count = 0;
         	for(c.moveToFirst(); !c.isAfterLast(); c.moveToNext())
         		count += delete(ContentUris.withAppendedId(DB.Uploads.CONTENT_URI, c.getLong(0)), null, null);
+            c.close();
             break;
 
         case UPLOAD_ID:

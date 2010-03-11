@@ -1,4 +1,4 @@
-package org.urbanstew.SoundCloudDroid;
+package org.urbanstew.soundclouddroid;
 
 import android.os.Bundle;
 import android.preference.PreferenceActivity;

@@ -1,13 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-      package="org.urbanstew.SoundCloudDroid"
-      android:versionCode="7" android:versionName="0.6.0">
-    <application android:icon="@drawable/icon" android:label="@string/app_name">
+      android:versionName="1.0.0" android:versionCode="9" package="org.urbanstew.soundclouddroid">
+    <application android:icon="@drawable/icon" android:label="@string/app_name" android:name="SoundCloudApplication">
     
-    	<provider android:name="SoundCloudData" android:authorities="org.urbanstew.provider.SoundCloudDroid"></provider>
+    	<provider android:name="SoundCloudData" android:authorities="org.urbanstew.provider.soundclouddroid"></provider>
     	
         <activity android:name=".SoundCloudDroid"
-                  android:label="@string/app_name">
+                  android:label="@string/app_name"
+                  android:configChanges="keyboardHidden|orientation"
+                  >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -17,7 +18,7 @@
 	    <activity
 	    	android:name="ObtainAccessToken"
 	    	android:configChanges="keyboardHidden|orientation"
-	    	>
+	    	android:label="Connect with SoundCloud">
 	    </activity>
 
 	    <activity android:name="SettingsActivity"></activity>
@@ -25,17 +26,22 @@
 	    <activity
 	    	android:name="UploadsActivity"
 	    	android:launchMode="singleTop"
-			android:allowTaskReparenting="true">
+			android:allowTaskReparenting="true" android:label="View Upload Status">
 	    </activity>
 
 	    <activity
 	    	android:name="UploadActivity"
 	    	android:configChanges="keyboardHidden|orientation"
-	    	>
+	    	android:label="Upload File To SoundCloud">
 	    	<intent-filter>
 	    		<action android:name="android.intent.action.SEND"></action>
 				<data android:mimeType="audio/*"></data>
 				<category android:name="android.intent.category.DEFAULT"/>
+			</intent-filter>
+			<intent-filter>
+				<action android:name="android.intent.action.VIEW"></action>
+				<category android:name="android.intent.category.DEFAULT"></category>
+				<data android:mimeType="vnd.android.cursor.item/org.urbanstew.soundclouddroid.uploads"></data>
 			</intent-filter>
 		</activity>
 
@@ -53,7 +59,8 @@
     
 	</application>
 
-	<uses-sdk android:minSdkVersion="4"/>
+	<uses-sdk android:minSdkVersion="3"/>
 
 	<uses-permission android:name="android.permission.INTERNET"></uses-permission>
+
 </manifest> 

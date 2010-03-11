@@ -5,3 +5,4 @@ SoundCloudDroid/gen/*
 .classpath
 .project
 default.properties
+.DS_Store

@@ -1,10 +1,17 @@
-package org.urbanstew.SoundCloudDroid;
+package org.urbanstew.soundclouddroid;
 
-import android.app.Activity;
+import org.apache.http.HttpResponse;
+
+import android.app.AlertDialog;
 import android.content.ActivityNotFoundException;
+import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
+import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.AdapterView;
@@ -17,7 +24,7 @@ import android.widget.Toast;
 import android.widget.ViewAnimator;
 import android.widget.AdapterView.OnItemSelectedListener;
 
-public class UploadActivity extends Activity
+public class UploadActivity extends SoundCloudActivity implements SoundCloudRequestClient
 {
 	protected void onCreate(Bundle savedInstanceState)
 	{
@@ -25,7 +32,7 @@ public class UploadActivity extends Activity
         
         setContentView(R.layout.upload);
         
-    	mUploadIntent = new Intent(this, SoundCloudService.class);
+        mUploadBundle = new Bundle();
 
         mTitleEdit=(EditText)findViewById(R.id.title_edit);
         mTitleEdit.selectAll();
@@ -79,8 +86,36 @@ public class UploadActivity extends Activity
         });
         
         mFileUri = (TextView) findViewById(R.id.file_uri);
-        if(getIntent() != null && getIntent().getAction() != null && getIntent().getAction().equals(Intent.ACTION_SEND) && getIntent().getExtras().containsKey(Intent.EXTRA_STREAM))
-        	setFileUri((Uri)getIntent().getExtras().get(Intent.EXTRA_STREAM));
+
+        if(getIntent() != null && getIntent().getAction() != null)
+        {
+        	if(getIntent().getAction().equals(Intent.ACTION_SEND) && getIntent().getExtras().containsKey(Intent.EXTRA_STREAM))
+        		setFileUri((Uri)getIntent().getExtras().get(Intent.EXTRA_STREAM));
+        	else if(getIntent().getAction().equals(Intent.ACTION_VIEW))
+        	{
+                Cursor cursor = getContentResolver().query(getIntent().getData(), sUploadsProjection, null, null, null);
+                if(cursor.getCount()>0)
+                {
+                	cursor.moveToFirst();
+                	setFileUri(Uri.parse(cursor.getString(PATH)));
+                	mTitleEdit.setText(cursor.getString(TITLE));
+                	if(!cursor.isNull(SHARING))
+                	{
+                		mUploadBundle.putCharSequence("sharing", cursor.getString(SHARING));
+    					selectedSpinnerAttribute("sharing", R.array.sharing_options);
+                	}
+                	if(!cursor.isNull(DESCRIPTION))
+                		mUploadBundle.putString("description", cursor.getString(DESCRIPTION));
+                	if(!cursor.isNull(GENRE))
+                		mUploadBundle.putString("genre", cursor.getString(GENRE));
+                	if(!cursor.isNull(TRACK_TYPE))
+                		mUploadBundle.putCharSequence("track_type", cursor.getString(TRACK_TYPE));
+                }
+                else
+                	Log.w(UploadActivity.class.getSimpleName(), "Uri " + getIntent().getData() + " not found");
+                cursor.close();
+        	}
+        }
 	}
 	
 	void commitSelectedAttribute()
@@ -88,24 +123,24 @@ public class UploadActivity extends Activity
 		switch(mLastExtraAttributePosition)
 		{
 		case 0:
-			mUploadIntent.putExtra("sharing", (CharSequence)mSpinnerAttribute.getSelectedItem());
+			mUploadBundle.putCharSequence("sharing", (CharSequence)mSpinnerAttribute.getSelectedItem());
 			break;
 		case 1:
-			mUploadIntent.putExtra("description", mTextAttribute.getText().toString());
+			mUploadBundle.putString("description", mTextAttribute.getText().toString());
 			break;
 		case 2:
-			mUploadIntent.putExtra("genre", mTextAttribute.getText().toString());
+			mUploadBundle.putString("genre", mTextAttribute.getText().toString());
 			break;
 		case 3:
-			mUploadIntent.putExtra("track_type", (CharSequence)mSpinnerAttribute.getSelectedItem());
+			mUploadBundle.putCharSequence("track_type", (CharSequence)mSpinnerAttribute.getSelectedItem());
 			break;					
 		}
 		mLastExtraAttributePosition = Spinner.INVALID_POSITION;
 	}
 	void selectedTextAttribute(String parameter)
 	{
-		if(mUploadIntent.hasExtra(parameter))
-			mTextAttribute.setText(mUploadIntent.getStringExtra(parameter));
+		if(mUploadBundle.containsKey(parameter))
+			mTextAttribute.setText(mUploadBundle.getString(parameter));
 		else
 			mTextAttribute.setText("");
 		mAnimator.setDisplayedChild(1); // text
@@ -118,9 +153,9 @@ public class UploadActivity extends Activity
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         mSpinnerAttribute.setAdapter(adapter);
 		mAnimator.setDisplayedChild(0); // spinner
-		if(mUploadIntent.hasExtra(parameter))
+		if(mUploadBundle.containsKey(parameter))
 			for(int i=0; i<adapter.getCount(); i++)
-				if(mUploadIntent.getStringExtra(parameter).equals(adapter.getItem(i)))
+				if(mUploadBundle.getCharSequence(parameter).equals(adapter.getItem(i)))
 				{
 					mSpinnerAttribute.setSelection(i);
 					break;
@@ -158,9 +193,9 @@ public class UploadActivity extends Activity
     public void uploadFile()
     {
     	commitSelectedAttribute();
-    	mUploadIntent.setData(mFile);
-    	mUploadIntent.putExtra("title", mTitleEdit.getText().toString());
-		startService(mUploadIntent);
+    	mUploadBundle.putString("title", mTitleEdit.getText().toString());
+
+		getSCApplication().uploadFile(mFile, mUploadBundle, this);
 		finish();
     }
     
@@ -191,10 +226,40 @@ public class UploadActivity extends Activity
 	    		}
 	    	});
     		mUploadButton.setText("Upload File");
+    		
+    		final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+    		String fileName = mFile.getLastPathSegment();
+        	if(preferences.getBoolean("display_3gpp_warning", true) && (fileName != null) && (fileName.endsWith(".3gp") || fileName.endsWith(".3gpp")))
+        	{
+        		new AlertDialog.Builder(this)
+            	.setTitle(R.string.warning)
+            	.setMessage(R.string.warning_3gpp_upload)
+		    	.setPositiveButton(R.string.ok,null)
+		    	.setNegativeButton
+		    	(
+		    		R.string.never_show,
+		    		new DialogInterface.OnClickListener()
+		    		{
+		    		    public void onClick(DialogInterface dialog, int whichButton)
+		    		    {
+		    		    	preferences.edit().putBoolean("display_3gpp_warning", false).commit();
+		    		    }
+		    		}
+		    	)
+		    	.create().show();
+        	}
     	}
     }
     
-    Intent mUploadIntent;
+	public void requestCompleted(HttpResponse response)
+	{
+	}
+
+	public void requestFailed(Exception e)
+	{
+	} 
+
+    Bundle mUploadBundle;
     
     int mLastExtraAttributePosition = Spinner.INVALID_POSITION;
 	EditText mTitleEdit, mTextAttribute;
@@ -202,5 +267,24 @@ public class UploadActivity extends Activity
 	TextView mFileUri;
 	Spinner mExtraAttribute, mSpinnerAttribute;
 	ViewAnimator mAnimator;
-	Uri mFile; 
+	Uri mFile;
+	
+    protected static final String[] sUploadsProjection = new String[]
+	{
+    	DB.Uploads._ID, // 0
+	    DB.Uploads.PATH, // 1
+	    DB.Uploads.TITLE, // 2
+	    DB.Uploads.SHARING, // 3
+	    DB.Uploads.DESCRIPTION, // 4
+	    DB.Uploads.GENRE, // 5
+	    DB.Uploads.TRACK_TYPE, // 6
+	};
+
+    static final int _ID = 0;
+    static final int PATH = 1;
+    static final int TITLE = 2;
+    static final int SHARING = 3;
+    static final int DESCRIPTION = 4;
+    static final int GENRE = 5;
+    static final int TRACK_TYPE = 6;
 }
