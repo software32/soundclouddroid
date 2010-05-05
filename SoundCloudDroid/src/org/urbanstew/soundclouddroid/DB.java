@@ -66,5 +66,36 @@ public class DB
         
         public static final String DEFAULT_SORT_ORDER = _ID + " DESC";
     }
+    
+    public static final class Tracks implements BaseColumns
+    {
+        // This class cannot be instantiated
+        private Tracks() {}
+
+        public static final String TABLE_NAME = "tracks";
+
+        /**
+         * The content:// style URL for this table
+         */
+        public static final Uri CONTENT_URI = Uri.parse("content://" + AUTHORITY + "/tracks");
+
+        /**
+         * The MIME type of {@link #CONTENT_URI} providing a directory of app data entries.
+         */
+        public static final String CONTENT_TYPE = "vnd.android.cursor.dir/org.urbanstew.soundclouddroid.tracks";
+
+        /**
+         * The MIME type of a {@link #CONTENT_URI} sub-directory of a single app data entry.
+         */
+        public static final String CONTENT_ITEM_TYPE = "vnd.android.cursor.item/org.urbanstew.soundclouddroid.tracks";
+
+        public static final String TITLE = "title";
+        public static final String ID = "id";
+        public static final String STREAM_URL = "stream_url";
+        public static final String DURATION = "duration";
+        
+        
+        public static final String DEFAULT_SORT_ORDER = ID + " DESC";
+    }
 }
 

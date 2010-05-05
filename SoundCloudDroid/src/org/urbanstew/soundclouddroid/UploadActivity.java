@@ -1,6 +1,7 @@
 package org.urbanstew.soundclouddroid;
 
 import org.apache.http.HttpResponse;
+import org.urbanstew.SoundCloudBase.SoundCloudRequestClient;
 
 import android.app.AlertDialog;
 import android.content.ActivityNotFoundException;

@@ -39,6 +39,12 @@
     android:layout_width="fill_parent" 
     android:layout_height="wrap_content"
 	/>
+<Button
+	android:id="@+id/view_tracks_button"
+	android:text="Play/Download My Tracks"
+    android:layout_width="fill_parent" 
+    android:layout_height="wrap_content"
+	/>
 </LinearLayout>
 <TextView
 	android:id="@+id/authorization_status"

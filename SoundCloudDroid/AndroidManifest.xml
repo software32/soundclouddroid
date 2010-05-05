@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-      android:versionName="1.0.0" android:versionCode="9" package="org.urbanstew.soundclouddroid">
+      package="org.urbanstew.soundclouddroid" android:versionCode="11" android:versionName="1.1.1">
     <application android:icon="@drawable/icon" android:label="@string/app_name" android:name="SoundCloudApplication">
     
     	<provider android:name="SoundCloudData" android:authorities="org.urbanstew.provider.soundclouddroid"></provider>
@@ -16,12 +16,10 @@
         </activity>
 
 	    <activity
-	    	android:name="ObtainAccessToken"
+	    	android:name="org.urbanstew.SoundCloudBase.ObtainAccessToken"
 	    	android:configChanges="keyboardHidden|orientation"
 	    	android:label="Connect with SoundCloud">
 	    </activity>
-
-	    <activity android:name="SettingsActivity"></activity>
 	    
 	    <activity
 	    	android:name="UploadsActivity"
@@ -29,6 +27,13 @@
 			android:allowTaskReparenting="true" android:label="View Upload Status">
 	    </activity>
 
+	    <activity
+	    	android:name="ViewTracksActivity"
+	    	android:launchMode="singleTask"
+			android:configChanges="keyboardHidden|orientation"
+	    	android:allowTaskReparenting="true" android:label="My Tracks">
+	    </activity>
+	    
 	    <activity
 	    	android:name="UploadActivity"
 	    	android:configChanges="keyboardHidden|orientation"
@@ -45,7 +50,7 @@
 			</intent-filter>
 		</activity>
 
-	    <service android:name="SoundCloudService">
+	    <service android:name="org.urbanstew.SoundCloudBase.SoundCloudService">
 			<intent-filter>
 			<action android:name="com.soundcloud.upload"></action>
 			<category android:name="android.intent.category.DEFAULT"></category>

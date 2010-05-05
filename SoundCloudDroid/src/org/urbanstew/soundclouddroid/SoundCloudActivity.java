@@ -1,16 +1,9 @@
 package org.urbanstew.soundclouddroid;
 
-import org.urbanstew.soundcloudapi.SoundCloudAPI;
+import org.urbanstew.SoundCloudBase.SoundCloudBaseActivity;
 
-import android.app.Activity;
-
-public class SoundCloudActivity extends Activity
+public class SoundCloudActivity extends SoundCloudBaseActivity
 {
-	public SoundCloudAPI getSoundCloudAPI()
-	{
-		return ((SoundCloudApplication)getApplication()).getSoundCloudAPI();
-	}
-
 	public SoundCloudApplication getSCApplication()
 	{
 		return (SoundCloudApplication)getApplication();

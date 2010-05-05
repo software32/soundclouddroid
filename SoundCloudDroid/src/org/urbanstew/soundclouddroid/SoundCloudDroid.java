@@ -4,6 +4,8 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
 import org.apache.http.HttpResponse;
+import org.urbanstew.SoundCloudBase.ObtainAccessToken;
+import org.urbanstew.SoundCloudBase.SoundCloudRequestClient;
 import org.urbanstew.soundcloudapi.SoundCloudAPI;
 import org.urbanstew.util.AppDataAccess;
 import org.w3c.dom.Document;
@@ -36,7 +38,7 @@ import android.widget.TextView;
  */
 public class SoundCloudDroid extends SoundCloudActivity implements SoundCloudRequestClient
 {
-	public static float CURRENT_VERSION = 0.7f;
+	public static float CURRENT_VERSION = 1.0f;
 	/**
      * The method called when the Activity is created.
      * <p>
@@ -73,6 +75,15 @@ public class SoundCloudDroid extends SoundCloudActivity implements SoundCloudReq
 			public void onClick(View arg0)
 			{
 				startActivity(new Intent(getApplication(), UploadsActivity.class));					
+			}
+    	});
+        
+        ((Button) findViewById(R.id.view_tracks_button))
+    	.setOnClickListener(new OnClickListener()
+    	{
+			public void onClick(View arg0)
+			{
+				startActivity(new Intent(getApplication(), ViewTracksActivity.class));					
 			}
     	});
         
@@ -169,8 +180,8 @@ public class SoundCloudDroid extends SoundCloudActivity implements SoundCloudReq
     	    startActivity(new Intent(Intent.ACTION_VIEW).setData(Uri.parse("http://code.google.com/p/soundclouddroid/issues/entry")));
     	else if(item == mJoinGroup)
     		startActivity(new Intent(Intent.ACTION_VIEW).setData(Uri.parse("http://groups.google.com/group/soundcloud-droid/subscribe")));
-    	else if(item == mSettingsMenuItem)
-    		startActivity(new Intent(getApplication(), SettingsActivity.class));
+//    	else if(item == mSettingsMenuItem)
+//    		startActivity(new Intent(getApplication(), SettingsActivity.class));
     	else if(item == mManualMenuItem)
     		startActivity(new Intent(Intent.ACTION_VIEW).setData(Uri.parse("http://urbanstew.org/soundclouddroid/manual.html")));
     	else

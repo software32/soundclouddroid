@@ -1,79 +1,38 @@
 package org.urbanstew.soundclouddroid;
 
 import java.io.File;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.NameValuePair;
 import org.apache.http.message.BasicNameValuePair;
-import org.urbanstew.soundclouddroid.SoundCloudAuthorizationClient.AuthorizationStatus;
+import org.urbanstew.SoundCloudBase.Progressable;
+import org.urbanstew.SoundCloudBase.SoundCloudApplicationBase;
+import org.urbanstew.SoundCloudBase.SoundCloudRequestClient;
 import org.urbanstew.soundcloudapi.ProgressFileBody;
 import org.urbanstew.soundcloudapi.SoundCloudAPI;
+import org.w3c.dom.Document;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 
-import android.app.Application;
 import android.app.Notification;
-import android.app.NotificationManager;
 import android.app.PendingIntent;
+import android.content.ContentUris;
 import android.content.ContentValues;
-import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
+import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Handler;
-import android.preference.PreferenceManager;
 import android.util.Log;
 import android.widget.RemoteViews;
 import android.widget.Toast;
 
-public class SoundCloudApplication extends Application
+public class SoundCloudApplication extends SoundCloudApplicationBase
 {
-	public final static boolean useSandbox = false;
-	
-	public void onCreate()
-	{
-		super.onCreate();
-
-    	mSoundCloud = newSoundCloudRequest();
-    	mNotificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-	}
-	
-	SoundCloudAPI newSoundCloudRequest()
-	{
-        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
-        // WARNING: the following resources are not a part of the repository for security reasons
-        // to build and test this app, you should register your build of the app with SoundCloud:
-        //  http://soundcloud.com/settings/applications/new
-        // and add your Consumer Key and Consumer Secret as string resources to the project.
-        // (with names "consumer_key" and "s5rmEGv9Rw7iulickCZl", respectively)
-        String consumerKey, consumerSecret;
-        if (!useSandbox)
-        {
-        	consumerKey = getResources().getString(R.string.consumer_key);
-        	consumerSecret  = getResources().getString(R.string.s5rmEGv9Rw7iulickCZl);
-        }
-        else
-        {
-        	consumerKey = getResources().getString(R.string.sandbox_consumer_key);
-        	consumerSecret  = getResources().getString(R.string.sandbox_consumer_secret);        	
-        }
-
-    	SoundCloudAPI soundCloud = new SoundCloudAPI
-    	(
-    		consumerKey,
-    		consumerSecret,
-    		preferences.getString("oauth_access_token", ""),
-    		preferences.getString("oauth_access_token_secret", ""),
-    		(useSandbox ? SoundCloudAPI.USE_SANDBOX : SoundCloudAPI.USE_PRODUCTION).with(SoundCloudAPI.OAuthVersion.V1_0)
-    	);
-    	    	
-    	return soundCloud;
-	}
 	
 	public void uploadFile(Uri uri, final Bundle extras, final SoundCloudRequestClient client)
 	{
@@ -129,11 +88,11 @@ public class SoundCloudApplication extends Application
                
         mNotificationManager.notify(notificationId, notification); 
 
-		final ProgressRunnable progress = new ProgressRunnable
+		final ProgressUpdater progress = new ProgressUpdater
 		(
 			remoteView,
 			notification,
-			fileBody,
+			new UploadProgressable(fileBody),
 			notificationId
 		);
 		
@@ -154,8 +113,12 @@ public class SoundCloudApplication extends Application
 				boolean success = false;
 	    		try
 				{
-					if(request.upload(fileBody, params).getStatusLine().getStatusCode() == HttpStatus.SC_CREATED)
+	    			HttpResponse response = request.upload(fileBody, params);
+					if(response.getStatusLine().getStatusCode() == HttpStatus.SC_CREATED)
+					{
+						processTracks(response);
 						success = true;
+					}
 				} catch (Exception e)
 				{
 				}
@@ -177,7 +140,7 @@ public class SoundCloudApplication extends Application
 	    			getApplicationContext(),
 	    			"SoundCloud Droid",
 	    			notificationString,
-	    			PendingIntent.getActivity(getApplicationContext(), 0, new Intent(getApplicationContext(), UploadsActivity.class), 0)
+	    			PendingIntent.getActivity(getApplicationContext(), 0, new Intent(getApplicationContext(), success ? ViewTracksActivity.class : UploadsActivity.class), 0)
 	    		);
 	    		notification.flags |= Notification.FLAG_AUTO_CANCEL;
 	    		mNotificationManager.notify(notificationId+1, notification);
@@ -189,142 +152,68 @@ public class SoundCloudApplication extends Application
     	launch(client, thread);
 	}
 
-	public void processRequest(final String request, final SoundCloudRequestClient client)
+	public int processTracks(HttpResponse response)
 	{
-    	Thread thread = new Thread(new Runnable()
-    	{
-			public void run()
-			{
-		    	HttpResponse response;
-				try
-				{
-					response = mSoundCloud.get(request);
-					client.requestCompleted(response);
-				} catch (Exception e)
-				{
-					client.requestFailed(e);
-				}
-				complete(client, Thread.currentThread());
-			}
-    	});
-    	
-    	launch(client, thread);
-	}
-
-	public void authorize(final SoundCloudAuthorizationClient client)
-	{
-		Thread thread = new Thread(new Runnable()
-		{
-			public void run()
-			{
-				AuthorizationStatus status = AuthorizationStatus.FAILED;
-
-				try
-				{
-					// Find a free port
-					int port=58088;
-/*					for(port=58088; port<59099; port++)
-					{
-						ServerSocket socket = null;
-						try
-						{
-							socket = new ServerSocket(port);
-						    break;
-						} catch (IOException e) {
-						} finally {
-						    if (socket != null) socket.close(); 
-						}
-					}*/
-					if(port<59099)
-					{
-						if(mSoundCloud.authorizeUsingUrl("http://127.0.0.1:" + port + "/","Thank you for authorizing",client))
-						{
-							status = AuthorizationStatus.SUCCESSFUL;
-							storeAuthorization();
-						}
-						else
-							status = AuthorizationStatus.CANCELED;
-					} // else failed
-				} catch (Exception e)
-				{
-					// failed
-				} finally
-				{
-					final AuthorizationStatus finalStatus = status;
-					client.authorizationCompleted(finalStatus);
-					complete(client, Thread.currentThread());
-				}
-			}
-		});
-		
-		launch(client, thread);
-	}
-
-	private void launch(Object object, Thread thread)
-	{
-		synchronized(mThreads)
-		{
-			Set<Thread> threads;
-			if(mThreads.containsKey(object))
-				threads = mThreads.get(object);
-			else
-				threads = new HashSet<Thread>();
-			threads.add(thread);
-		}
-		thread.start();
-		Log.d(SoundCloudApplication.class.getSimpleName(), "Starting SoundCloudService");
-		startService(new Intent(this, SoundCloudService.class));
+		return processTracks(response, false);
 	}
 	
-	private void complete(Object object, Thread thread)
+	public int processTracks(HttpResponse response, boolean update)
 	{
-		synchronized(mThreads)
-		{
-			if(mThreads.containsKey(object))
-			{
-				Set<Thread> threads = mThreads.get(object);
-				threads.remove(thread);
-				if(threads.size()==0)
-					mThreads.remove(object);
-			}
-			if(mThreads.size()==0)
-			{
-				Log.d(SoundCloudApplication.class.getSimpleName(), "Stopping SoundCloudService");
-				stopService(new Intent(this, SoundCloudService.class));
-			}
-		}
-	}
-	
-	public void cancel(Object object)
-	{
-		synchronized(mThreads)
-		{
-			if(mThreads.containsKey(object))
-			{
-				for(Thread thread : mThreads.get(object))
-				{
-					thread.interrupt();
-					complete(object, thread);
-				}
-			}
-		}
-	}
+		try {
+			
+			DocumentBuilder db = DocumentBuilderFactory.newInstance().newDocumentBuilder();
 
-	private void storeAuthorization()
-	{
-		SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
-    	preferences.edit()
-    	.putString("oauth_access_token", mSoundCloud.getToken())
-    	.putString("oauth_access_token_secret", mSoundCloud.getTokenSecret())
-    	.commit();
+			Document dom = db.parse(response.getEntity().getContent());
+			
+			NodeList tracks = dom.getElementsByTagName("track");
+						
+			for(int i=0; i<tracks.getLength(); i++)
+			{
+				Node track = tracks.item(i);
+				ContentValues values = new ContentValues();
+				NodeList trackElements = track.getChildNodes();
+				for(int j=0; j<trackElements.getLength(); j++)
+				{
+					Node item = trackElements.item(j);
+					String value = item.getFirstChild() == null ? "" : item.getFirstChild().getNodeValue();
+					if(item.getNodeName().equals("id"))
+						values.put(DB.Tracks.ID, value);
+					else if(item.getNodeName().equals("title"))
+						values.put(DB.Tracks.TITLE, value);
+					else if(item.getNodeName().equals("stream-url"))
+						values.put(DB.Tracks.STREAM_URL, value);
+					else if(item.getNodeName().equals("duration"))
+						values.put(DB.Tracks.DURATION, value);
+				}
+	    		boolean updateSucceeded = false;
+		    	if(update)
+		    	{
+		    		Cursor c = getContentResolver().query(DB.Tracks.CONTENT_URI, sTracksIDProjection, DB.Tracks.ID + " = " + values.getAsString("id"), null, null);
+		    		if(c.getCount()>0)
+		    		{
+		    			c.moveToFirst();
+		    			Uri uri = ContentUris.withAppendedId(DB.Tracks.CONTENT_URI, c.getLong(0));
+		    			Log.d(SoundCloudApplication.class.getSimpleName(), "Updating track " + uri);
+		    			getContentResolver().update(uri, values, null, null);
+		    			updateSucceeded = true;
+		    		}
+		    		c.close();
+		    	}
+		    	if(!updateSucceeded) // || !update
+		    		getContentResolver().insert(DB.Tracks.CONTENT_URI, values);
+
+			}
+			
+			return tracks.getLength();
+		}catch(Exception e) {
+			e.printStackTrace();
+			return -1;
+		}		
 	}
     
-    SoundCloudAPI mSoundCloud;
-	NotificationManager mNotificationManager;
-    
-    Handler mHandler = new Handler();
-    
-    class ProgressRunnable implements Runnable
+	static String[] sTracksIDProjection = new String[] {DB.Tracks._ID};
+
+/*    class ProgressRunnable implements Runnable
     { 
     	ProgressRunnable(RemoteViews remoteView, Notification notification, ProgressFileBody fileBody, int notificationId)
     	{
@@ -369,12 +258,20 @@ public class SoundCloudApplication extends Application
     	ProgressFileBody mFileBody;
     	boolean mContinue;
     	int mId;
-    }
+    }*/
+}
 
-	public SoundCloudAPI getSoundCloudAPI()
+class UploadProgressable implements Progressable
+{
+	UploadProgressable(ProgressFileBody fileBody)
 	{
-		return mSoundCloud;
-	};
+		mFileBody = fileBody;
+	}
 	
-	Map<Object, Set<Thread>> mThreads = new HashMap<Object, Set<Thread>>();
+	public int getProgress()
+	{
+		return (int) (mFileBody.getBytesTransferred() * 100 / mFileBody.getContentLength());
+	}	
+	
+	ProgressFileBody mFileBody;
 }

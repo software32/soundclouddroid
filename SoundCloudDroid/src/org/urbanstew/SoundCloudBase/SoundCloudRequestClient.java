@@ -1,4 +1,4 @@
-package org.urbanstew.soundclouddroid;
+package org.urbanstew.SoundCloudBase;
 
 import org.apache.http.HttpResponse;
 

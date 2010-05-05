@@ -1,4 +1,6 @@
-package org.urbanstew.soundclouddroid;
+package org.urbanstew.SoundCloudBase;
+
+import org.urbanstew.soundclouddroid.R;
 
 import android.os.Bundle;
 import android.webkit.WebView;
@@ -12,7 +14,7 @@ import android.widget.Toast;
  * 
  * @author      Stjepan Rajko
  */
-public class ObtainAccessToken extends SoundCloudActivity implements SoundCloudAuthorizationClient
+public class ObtainAccessToken extends SoundCloudBaseActivity implements SoundCloudAuthorizationClient
 {
     /**
      * Called when the Activity is created.
@@ -37,7 +39,7 @@ public class ObtainAccessToken extends SoundCloudActivity implements SoundCloudA
         
         Toast.makeText(ObtainAccessToken.this, "Please select \"Allow access\" when the SoundCloud authorization page loads.", Toast.LENGTH_LONG).show();
 
-    	getSCApplication().authorize(this);
+    	getSCApplicationBase().authorize(this);
     }
 
     public void onDestroy()
@@ -45,7 +47,7 @@ public class ObtainAccessToken extends SoundCloudActivity implements SoundCloudA
     	super.onDestroy();
     	// if the authorization is complete, canceling doesn't hurt
     	getSoundCloudAPI().cancelAuthorizeUsingUrl();
-    	getSCApplication().cancel(this);
+    	getSCApplicationBase().cancel(this);
     }
 
 	public void authorizationCompleted(final AuthorizationStatus status)

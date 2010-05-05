@@ -1,4 +1,4 @@
-package org.urbanstew.soundclouddroid;
+package org.urbanstew.SoundCloudBase;
 
 import org.urbanstew.android.util.ForegroundService;
 
@@ -37,7 +37,7 @@ public class SoundCloudService extends ForegroundService
 			getApplicationContext(),
 			"SoundCloud Droid",
 			"Communicating with SoundCloud...",
-			PendingIntent.getActivity(getApplicationContext(), 0, new Intent(getApplicationContext(), UploadsActivity.class), 0)
+			PendingIntent.getActivity(getApplicationContext(), 0, new Intent(), 0)
 		);
 		notification.flags |= Notification.FLAG_ONGOING_EVENT;
 		
