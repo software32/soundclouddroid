@@ -100,6 +100,8 @@ public class SoundCloudApplication extends SoundCloudApplicationBase
     	{
 			public void run()
 			{
+				String failureString = "";
+				
 				List<NameValuePair> params = new java.util.ArrayList<NameValuePair>();
 
 				for (String key : extras.keySet())
@@ -113,8 +115,11 @@ public class SoundCloudApplication extends SoundCloudApplicationBase
 						processTracks(response, 0);
 						success = true;
 					}
+					else
+						failureString = ". SoundCloud response: " + response.getStatusLine().getReasonPhrase();
 				} catch (Exception e)
 				{
+					failureString = ". Exception: " + e.toString();
 				}
 				progress.finish();
 				
@@ -122,7 +127,7 @@ public class SoundCloudApplication extends SoundCloudApplicationBase
 	        	values.put(DB.Uploads.STATUS, success ? "uploaded" : "failed");
 	    		getContentResolver().update(upload, values, null, null);
 	    		
-	    		String notificationString = title + " upload " + (success ? "completed" : "failed");
+	    		String notificationString = title + " upload " + (success ? "completed" : "failed" + failureString);
 	    		Notification notification = new Notification
 	    		(
 	    			success ? android.R.drawable.stat_sys_upload_done : android.R.drawable.stat_notify_error,
