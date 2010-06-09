@@ -2,6 +2,8 @@ syntax: glob
 
 SoundCloudDroid/bin/*
 SoundCloudDroid/gen/*
+SoundCloudBase/bin/*
+SoundCloudBase/gen/*
 .classpath
 .project
 default.properties
