@@ -3,28 +3,22 @@ package org.urbanstew.soundclouddroid;
 import java.io.File;
 import java.util.List;
 
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.NameValuePair;
 import org.apache.http.message.BasicNameValuePair;
+import org.urbanstew.SoundCloudBase.DB;
 import org.urbanstew.SoundCloudBase.Progressable;
 import org.urbanstew.SoundCloudBase.SoundCloudApplicationBase;
 import org.urbanstew.SoundCloudBase.SoundCloudRequestClient;
+import org.urbanstew.SoundCloudBase.ViewTracksActivity;
 import org.urbanstew.soundcloudapi.ProgressFileBody;
 import org.urbanstew.soundcloudapi.SoundCloudAPI;
-import org.w3c.dom.Document;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
 
 import android.app.Notification;
 import android.app.PendingIntent;
-import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.Intent;
-import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
@@ -116,7 +110,7 @@ public class SoundCloudApplication extends SoundCloudApplicationBase
 	    			HttpResponse response = request.upload(fileBody, params);
 					if(response.getStatusLine().getStatusCode() == HttpStatus.SC_CREATED)
 					{
-						processTracks(response);
+						processTracks(response, 0);
 						success = true;
 					}
 				} catch (Exception e)
@@ -152,113 +146,6 @@ public class SoundCloudApplication extends SoundCloudApplicationBase
     	launch(client, thread);
 	}
 
-	public int processTracks(HttpResponse response)
-	{
-		return processTracks(response, false);
-	}
-	
-	public int processTracks(HttpResponse response, boolean update)
-	{
-		try {
-			
-			DocumentBuilder db = DocumentBuilderFactory.newInstance().newDocumentBuilder();
-
-			Document dom = db.parse(response.getEntity().getContent());
-			
-			NodeList tracks = dom.getElementsByTagName("track");
-						
-			for(int i=0; i<tracks.getLength(); i++)
-			{
-				Node track = tracks.item(i);
-				ContentValues values = new ContentValues();
-				NodeList trackElements = track.getChildNodes();
-				for(int j=0; j<trackElements.getLength(); j++)
-				{
-					Node item = trackElements.item(j);
-					String value = item.getFirstChild() == null ? "" : item.getFirstChild().getNodeValue();
-					if(item.getNodeName().equals("id"))
-						values.put(DB.Tracks.ID, value);
-					else if(item.getNodeName().equals("title"))
-						values.put(DB.Tracks.TITLE, value);
-					else if(item.getNodeName().equals("stream-url"))
-						values.put(DB.Tracks.STREAM_URL, value);
-					else if(item.getNodeName().equals("duration"))
-						values.put(DB.Tracks.DURATION, value);
-				}
-	    		boolean updateSucceeded = false;
-		    	if(update)
-		    	{
-		    		Cursor c = getContentResolver().query(DB.Tracks.CONTENT_URI, sTracksIDProjection, DB.Tracks.ID + " = " + values.getAsString("id"), null, null);
-		    		if(c.getCount()>0)
-		    		{
-		    			c.moveToFirst();
-		    			Uri uri = ContentUris.withAppendedId(DB.Tracks.CONTENT_URI, c.getLong(0));
-		    			Log.d(SoundCloudApplication.class.getSimpleName(), "Updating track " + uri);
-		    			getContentResolver().update(uri, values, null, null);
-		    			updateSucceeded = true;
-		    		}
-		    		c.close();
-		    	}
-		    	if(!updateSucceeded) // || !update
-		    		getContentResolver().insert(DB.Tracks.CONTENT_URI, values);
-
-			}
-			
-			return tracks.getLength();
-		}catch(Exception e) {
-			e.printStackTrace();
-			return -1;
-		}		
-	}
-    
-	static String[] sTracksIDProjection = new String[] {DB.Tracks._ID};
-
-/*    class ProgressRunnable implements Runnable
-    { 
-    	ProgressRunnable(RemoteViews remoteView, Notification notification, ProgressFileBody fileBody, int notificationId)
-    	{
-    		mRemoteView = remoteView;
-    		mNotification = notification;
-    		mFileBody = fileBody;
-    		mContinue = true;
-    		mId = notificationId;
-    	}
-    	
-    	public void run()
-		{
-    		if(!mContinue)
-    	    	return;
-
-    		int percent = (int) (mFileBody.getBytesTransferred() * 100 / mFileBody.getContentLength());
-    		update(percent);
-            
-            mHandler.postDelayed
-	    	(
-	    		this,
-	    		1000
-	    	);
-		}
-    	
-    	public void finish()
-    	{
-    		mContinue = false;
-    		update(100);
-    		mNotificationManager.cancel(mId);
-    	}
-    	
-    	private void update(int percent)
-    	{
-            mRemoteView.setProgressBar(R.id.progressBar, 100, percent, false);
-            mRemoteView.setCharSequence(R.id.progressPercentage, "setText", percent + "%");
-            mNotificationManager.notify(mId, mNotification);
-    	}
-    	
-    	RemoteViews mRemoteView;
-    	Notification mNotification;
-    	ProgressFileBody mFileBody;
-    	boolean mContinue;
-    	int mId;
-    }*/
 }
 
 class UploadProgressable implements Progressable

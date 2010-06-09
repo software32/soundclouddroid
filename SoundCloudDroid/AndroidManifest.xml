@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
+
+<!-- Change for specific app -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-      package="org.urbanstew.soundclouddroid" android:versionCode="11" android:versionName="1.1.1">
+      package="org.urbanstew.soundclouddroid" android:versionName="1.1.2" android:versionCode="12">
     <application android:icon="@drawable/icon" android:label="@string/app_name" android:name="SoundCloudApplication">
-    
-    	<provider android:name="SoundCloudData" android:authorities="org.urbanstew.provider.soundclouddroid"></provider>
-    	
+        	
         <activity android:name=".SoundCloudDroid"
                   android:label="@string/app_name"
                   android:configChanges="keyboardHidden|orientation"
@@ -15,25 +15,8 @@
             </intent-filter>
         </activity>
 
-	    <activity
-	    	android:name="org.urbanstew.SoundCloudBase.ObtainAccessToken"
-	    	android:configChanges="keyboardHidden|orientation"
-	    	android:label="Connect with SoundCloud">
-	    </activity>
-	    
-	    <activity
-	    	android:name="UploadsActivity"
-	    	android:launchMode="singleTop"
-			android:allowTaskReparenting="true" android:label="View Upload Status">
-	    </activity>
+<!-- SoundCloud Droid specific -->
 
-	    <activity
-	    	android:name="ViewTracksActivity"
-	    	android:launchMode="singleTask"
-			android:configChanges="keyboardHidden|orientation"
-	    	android:allowTaskReparenting="true" android:label="My Tracks">
-	    </activity>
-	    
 	    <activity
 	    	android:name="UploadActivity"
 	    	android:configChanges="keyboardHidden|orientation"
@@ -49,19 +32,39 @@
 				<data android:mimeType="vnd.android.cursor.item/org.urbanstew.soundclouddroid.uploads"></data>
 			</intent-filter>
 		</activity>
+		
+    	<activity
+	    	android:name="UploadsActivity"
+	    	android:launchMode="singleTop"
+			android:allowTaskReparenting="true" android:label="View Upload Status">
+	    </activity>
+	    
+	    <activity
+	    	android:name="ViewTracksActivity"
+	    	android:launchMode="singleTask"
+			android:configChanges="keyboardHidden|orientation"
+	    	android:allowTaskReparenting="true" android:label="My Tracks">
+	    </activity>
 
+	    <activity
+	    	android:name="ViewOtherTracksActivity"
+	    	android:launchMode="singleTask"
+			android:configChanges="keyboardHidden|orientation"
+	    	android:allowTaskReparenting="true" android:label="My Favorites">
+	    </activity>
+	    
+<!-- SoundCloudBase -->
+		<provider android:name="org.urbanstew.SoundCloudBase.SoundCloudData" android:authorities="org.urbanstew.provider.soundclouddroid"></provider>
+
+	    <activity
+	    	android:name="org.urbanstew.SoundCloudBase.ObtainAccessToken"
+	    	android:configChanges="keyboardHidden|orientation"
+	    	android:label="Connect with SoundCloud">
+	    </activity>
+	    
 	    <service android:name="org.urbanstew.SoundCloudBase.SoundCloudService">
-			<intent-filter>
-			<action android:name="com.soundcloud.upload"></action>
-			<category android:name="android.intent.category.DEFAULT"></category>
-			</intent-filter>
-		    <intent-filter>
-		                <!-- These are the interfaces supported by the service, which
-		                     you can bind to. -->
-		                <action android:name="org.urbanstew.SoundCloudDroid.ISoundCloudService" />
-		    </intent-filter>
 		</service>
-    
+   
 	</application>
 
 	<uses-sdk android:minSdkVersion="3"/>

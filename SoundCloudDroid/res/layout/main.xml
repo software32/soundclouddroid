@@ -28,20 +28,14 @@
     android:gravity="center"
 	/>
 <Button
-	android:id="@+id/upload_button"
-	android:text="Upload File to SoundCloud"
-    android:layout_width="fill_parent" 
-    android:layout_height="wrap_content"
-	/>
-<Button
-	android:id="@+id/upload_status_button"
-	android:text="View Upload Status"
-    android:layout_width="fill_parent" 
-    android:layout_height="wrap_content"
-	/>
-<Button
 	android:id="@+id/view_tracks_button"
-	android:text="Play/Download My Tracks"
+	android:text="Play/Download/Upload My Tracks"
+    android:layout_width="fill_parent" 
+    android:layout_height="wrap_content"
+	/>
+<Button
+	android:id="@+id/view_favorites_button"
+	android:text="Play/Download My Favorites"
     android:layout_width="fill_parent" 
     android:layout_height="wrap_content"
 	/>

@@ -1,6 +1,7 @@
 package org.urbanstew.soundclouddroid;
 
 import org.apache.http.HttpResponse;
+import org.urbanstew.SoundCloudBase.DB;
 import org.urbanstew.SoundCloudBase.SoundCloudRequestClient;
 
 import android.app.AlertDialog;
@@ -235,7 +236,7 @@ public class UploadActivity extends SoundCloudActivity implements SoundCloudRequ
         		new AlertDialog.Builder(this)
             	.setTitle(R.string.warning)
             	.setMessage(R.string.warning_3gpp_upload)
-		    	.setPositiveButton(R.string.ok,null)
+		    	.setPositiveButton(android.R.string.ok,null)
 		    	.setNegativeButton
 		    	(
 		    		R.string.never_show,

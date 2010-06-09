@@ -1,5 +1,7 @@
 package org.urbanstew.soundclouddroid;
 
+import org.urbanstew.SoundCloudBase.DB;
+
 import android.app.Activity;
 import android.content.ContentUris;
 import android.content.Intent;
