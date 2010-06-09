@@ -145,6 +145,7 @@ public class SoundCloudApplicationBase extends Application
 					if(verificationCode != null)
 						mSoundCloud.obtainAccessToken(verificationCode);
 					status = AuthorizationStatus.SUCCESSFUL;
+					storeAuthorization();
 				} catch (Exception e)
 				{
 					client.exceptionOccurred(e);

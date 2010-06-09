@@ -116,9 +116,13 @@ public class SoundCloudApplication extends SoundCloudApplicationBase
 						success = true;
 					}
 					else
+					{
+						Log.e(SoundCloudApplication.class.getName(), "Unexpected response on upload: " + response.getStatusLine().getStatusCode() + " " + response.getStatusLine().getReasonPhrase());
 						failureString = ". SoundCloud response: " + response.getStatusLine().getReasonPhrase();
+					}
 				} catch (Exception e)
 				{
+					Log.e(SoundCloudApplication.class.getName(), "Exception on upload: " + e.toString());
 					failureString = ". Exception: " + e.toString();
 				}
 				progress.finish();
