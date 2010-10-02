@@ -6,7 +6,6 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import org.apache.http.HttpResponse;
 import org.urbanstew.SoundCloudBase.ObtainAccessToken;
 import org.urbanstew.SoundCloudBase.SoundCloudRequestClient;
-import org.urbanstew.SoundCloudBase.ViewTracksActivity;
 import org.urbanstew.soundcloudapi.SoundCloudAPI;
 import org.urbanstew.util.AppDataAccess;
 import org.w3c.dom.Document;
@@ -21,7 +20,6 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.ImageButton;
-import android.widget.Button;
 import android.widget.TextView;
 
 /**
@@ -57,15 +55,6 @@ public class SoundCloudMainActivity extends SoundCloudBaseActivity implements So
 					authorize();
 				}
 	        });
-                
-        ((Button) findViewById(R.id.view_tracks_button))
-    	.setOnClickListener(new OnClickListener()
-    	{
-			public void onClick(View arg0)
-			{
-				startActivity(new Intent(getApplication(), ViewTracksActivity.class));					
-			}
-    	});
         
         final AppDataAccess appData = new AppDataAccess(this);
         if(appData.getVisitedVersion() == 0)
@@ -127,15 +116,15 @@ public class SoundCloudMainActivity extends SoundCloudBaseActivity implements So
     public boolean onOptionsItemSelected(MenuItem item) 
     {
     	if(item == mView)
-    	    startActivity(new Intent(Intent.ACTION_VIEW).setData(Uri.parse("http://code.google.com/p/soundclouddroid/issues/list")));    		
+    	    startActivity(new Intent(Intent.ACTION_VIEW).setData(Uri.parse(getString(R.string.SCB_issues_url))));    		
     	else if(item == mReport)
-    	    startActivity(new Intent(Intent.ACTION_VIEW).setData(Uri.parse("http://code.google.com/p/soundclouddroid/issues/entry")));
+    	    startActivity(new Intent(Intent.ACTION_VIEW).setData(Uri.parse(getString(R.string.SCB_new_issue_url))));
     	else if(item == mJoinGroup)
-    		startActivity(new Intent(Intent.ACTION_VIEW).setData(Uri.parse("http://groups.google.com/group/soundcloud-droid/subscribe")));
+    		startActivity(new Intent(Intent.ACTION_VIEW).setData(Uri.parse(getString(R.string.SCB_join_mailing_list_url))));
 //    	else if(item == mSettingsMenuItem)
 //    		startActivity(new Intent(getApplication(), SettingsActivity.class));
     	else if(item == mManualMenuItem)
-    		startActivity(new Intent(Intent.ACTION_VIEW).setData(Uri.parse("http://urbanstew.org/soundclouddroid/manual.html")));
+    		startActivity(new Intent(Intent.ACTION_VIEW).setData(Uri.parse(getString(R.string.SCB_manual_url))));
     	else
     		return false;
     	return true;

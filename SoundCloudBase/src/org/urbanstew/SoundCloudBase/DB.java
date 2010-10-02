@@ -26,13 +26,15 @@ package org.urbanstew.SoundCloudBase;
 
 import android.net.Uri;
 import android.provider.BaseColumns;
+import org.urbanstew.SoundCloudBase.Config;
 
 public class DB
 {
-    public static final String AUTHORITY = "org.urbanstew.provider.soundclouddroid";
+    public static final String AUTHORITY = Config.AUTHORITY;
+    public static final String PACKAGE = Config.PACKAGE;
 
     // This class cannot be instantiated
-    private DB() {}
+    protected DB() {}
     
     public static final class Uploads implements BaseColumns
     {
@@ -49,12 +51,12 @@ public class DB
         /**
          * The MIME type of {@link #CONTENT_URI} providing a directory of app data entries.
          */
-        public static final String CONTENT_TYPE = "vnd.android.cursor.dir/org.urbanstew.soundclouddroid.uploads";
+        public static final String CONTENT_TYPE = "vnd.android.cursor.dir/" + PACKAGE + ".uploads";
 
         /**
          * The MIME type of a {@link #CONTENT_URI} sub-directory of a single app data entry.
          */
-        public static final String CONTENT_ITEM_TYPE = "vnd.android.cursor.item/org.urbanstew.soundclouddroid.uploads";
+        public static final String CONTENT_ITEM_TYPE = "vnd.android.cursor.item/" + PACKAGE + ".uploads";
 
         public static final String TITLE = "title";
         public static final String PATH = "path";
@@ -82,12 +84,12 @@ public class DB
         /**
          * The MIME type of {@link #CONTENT_URI} providing a directory of app data entries.
          */
-        public static final String CONTENT_TYPE = "vnd.android.cursor.dir/org.urbanstew.soundclouddroid.tracks";
+        public static final String CONTENT_TYPE = "vnd.android.cursor.dir/" + PACKAGE + ".tracks";
 
         /**
          * The MIME type of a {@link #CONTENT_URI} sub-directory of a single app data entry.
          */
-        public static final String CONTENT_ITEM_TYPE = "vnd.android.cursor.item/org.urbanstew.soundclouddroid.tracks";
+        public static final String CONTENT_ITEM_TYPE = "vnd.android.cursor.item/" + PACKAGE + ".tracks";
 
         public static final String TITLE = "title";
         public static final String ID = "id";

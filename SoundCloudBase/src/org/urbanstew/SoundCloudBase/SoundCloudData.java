@@ -1,5 +1,7 @@
 package org.urbanstew.SoundCloudBase;
 
+import java.util.Vector;
+
 import android.content.ContentProvider;
 import android.content.ContentUris;
 import android.content.ContentValues;
@@ -29,11 +31,11 @@ public class SoundCloudData extends ContentProvider {
 
 	enum Uploads { _ID, TITLE, PATH, SHARING, DESCRIPTION, GENRE, TRACK_TYPE}
 	
-	private static class DatabaseHelper extends SQLiteOpenHelper
+	protected static class DatabaseHelper extends SQLiteOpenHelper
 	{
-		static int currentVersion = 13;
+		static int currentVersion = 14;
 		
-		DatabaseHelper(Context context)
+		protected DatabaseHelper(Context context)
 		{
 			super(context, "soundcloud_droid.db", null, currentVersion);
 			mContext = context;
@@ -85,6 +87,8 @@ public class SoundCloudData extends ContentProvider {
             case 12:
     			db.execSQL("ALTER TABLE " + DB.Tracks.TABLE_NAME + " ADD COLUMN " + DB.Tracks.CLASS + " INTEGER DEFAULT 0");
     			break;
+            case 13:
+            	break; // change only in soundclouddroid
     		default:
             	db.execSQL("DROP TABLE IF EXISTS " + DB.Uploads.TABLE_NAME);
     			onCreate(db);
@@ -99,7 +103,26 @@ public class SoundCloudData extends ContentProvider {
     private static final int TRACKS = 3;
     private static final int TRACK_ID = 4;
     
-    private static final UriMatcher sUriMatcher;
+    public static class TableListEntry
+    {
+    	public TableListEntry(String TABLE_NAME, Uri CONTENT_URI, String DEFAULT_SORT_ORDER, String nullColumnHack, boolean isItem)
+    	{
+    		this.TABLE_NAME = TABLE_NAME;
+    		this.CONTENT_URI = CONTENT_URI;
+    		this.DEFAULT_SORT_ORDER = DEFAULT_SORT_ORDER;
+    		this.nullColumnHack = nullColumnHack;
+    		this.isItem = isItem;
+    	}
+    	
+    	public String TABLE_NAME;
+    	public Uri CONTENT_URI;
+    	public String DEFAULT_SORT_ORDER;
+    	public String nullColumnHack;
+    	public boolean isItem;
+    }
+    
+    protected static final UriMatcher sUriMatcher;
+    protected static final Vector<TableListEntry> sTableList;
 
     static {
         sUriMatcher = new UriMatcher(UriMatcher.NO_MATCH);
@@ -107,6 +130,12 @@ public class SoundCloudData extends ContentProvider {
         sUriMatcher.addURI(DB.AUTHORITY, "uploads/#", UPLOAD_ID);
         sUriMatcher.addURI(DB.AUTHORITY, "tracks", TRACKS);
         sUriMatcher.addURI(DB.AUTHORITY, "tracks/#", TRACK_ID);
+        
+        sTableList = new Vector<TableListEntry>();
+        sTableList.add(new TableListEntry(DB.Uploads.TABLE_NAME, DB.Uploads.CONTENT_URI, DB.Uploads.DEFAULT_SORT_ORDER, DB.Uploads.TITLE, false));
+        sTableList.add(new TableListEntry(DB.Uploads.TABLE_NAME, DB.Uploads.CONTENT_URI, DB.Uploads.DEFAULT_SORT_ORDER, null, true));
+        sTableList.add(new TableListEntry(DB.Tracks.TABLE_NAME, DB.Tracks.CONTENT_URI, DB.Tracks.DEFAULT_SORT_ORDER, DB.Uploads.TITLE, false));
+        sTableList.add(new TableListEntry(DB.Tracks.TABLE_NAME, DB.Tracks.CONTENT_URI, DB.Tracks.DEFAULT_SORT_ORDER, null, true));
     }
 
 	@Override
@@ -114,34 +143,25 @@ public class SoundCloudData extends ContentProvider {
 	{
         SQLiteDatabase db = mOpenHelper.getWritableDatabase();
         int count;
-        switch (sUriMatcher.match(uri)) {
-        case UPLOADS:
-        	count = db.delete(DB.Uploads.TABLE_NAME, (!TextUtils.isEmpty(selection) ? "(" + selection + ')' : null), selectionArgs);
-            break;
-
-        case UPLOAD_ID:
+        
+        int index = sUriMatcher.match(uri);
+        if(index>0)
         {
-            String uploadId = uri.getPathSegments().get(1);
-            count = db.delete(DB.Uploads.TABLE_NAME, DB.Uploads._ID + "=" + uploadId
-                    + (!TextUtils.isEmpty(selection) ? " AND (" + selection + ')' : ""), selectionArgs);
+        	TableListEntry entry = sTableList.elementAt(index-1);
+        	String where = (!TextUtils.isEmpty(selection) ? "(" + selection + ')' : null);
+            if(entry.isItem)
+            {
+            	String whereUploadId = BaseColumns._ID + "=" + uri.getPathSegments().get(1);
+            	if(where != null)
+            		where = whereUploadId + " AND " + where;
+            	else
+            		where = whereUploadId;
+            }
+        
+        	count = db.delete(entry.TABLE_NAME, where, selectionArgs);
         }
-            break;
-
-        case TRACKS:
-        	count = db.delete(DB.Tracks.TABLE_NAME, (!TextUtils.isEmpty(selection) ? "(" + selection + ')' : null), selectionArgs);
-            break;
-
-        case TRACK_ID:
-        {
-            String uploadId = uri.getPathSegments().get(1);
-            count = db.delete(DB.Tracks.TABLE_NAME, DB.Tracks._ID + "=" + uploadId
-                    + (!TextUtils.isEmpty(selection) ? " AND (" + selection + ')' : ""), selectionArgs);
-        }
-            break;
-
-        default:
+        else
             throw new IllegalArgumentException("Unknown URI " + uri);
-        }
 
         getContext().getContentResolver().notifyChange(uri, null);
         return count;
@@ -182,23 +202,16 @@ public class SoundCloudData extends ContentProvider {
         long rowId=0;
         Uri contentURI;
 
-		switch(sUriMatcher.match(uri))
-		{
-			case UPLOADS:
-			{
-		        rowId = db.insert(DB.Uploads.TABLE_NAME, DB.Uploads.TITLE, values);
-		        contentURI = DB.Uploads.CONTENT_URI;
-		        break;
-			}
-			case TRACKS:
-			{
-		        rowId = db.insert(DB.Tracks.TABLE_NAME, DB.Tracks.TITLE, values);
-		        contentURI = DB.Tracks.CONTENT_URI;
-		        break;
-			}
-			default:
-		        throw new IllegalArgumentException("Unknown URI " + uri);
-		}
+        int index = sUriMatcher.match(uri);
+        if(index>0)
+        {
+        	TableListEntry entry = sTableList.elementAt(index-1);
+	        rowId = db.insert(entry.TABLE_NAME, entry.nullColumnHack, values);
+	        contentURI = entry.CONTENT_URI;
+        }
+        else
+            throw new IllegalArgumentException("Unknown URI " + uri);
+        
         if (rowId >= 0)
         {
             Uri noteUri = ContentUris.withAppendedId(contentURI, rowId);
@@ -216,31 +229,17 @@ public class SoundCloudData extends ContentProvider {
 
         String orderBy;
 
-        switch (sUriMatcher.match(uri)) {
-        case UPLOADS:
-            qb.setTables(DB.Uploads.TABLE_NAME);
-            orderBy = DB.Uploads.DEFAULT_SORT_ORDER;
-            break;
-
-        case UPLOAD_ID:
-            qb.setTables(DB.Uploads.TABLE_NAME);
-            qb.appendWhere(DB.Uploads._ID + "=" + uri.getPathSegments().get(1));
-            orderBy = DB.Uploads.DEFAULT_SORT_ORDER;
-            break;
-            
-        case TRACKS:
-            qb.setTables(DB.Tracks.TABLE_NAME);
-            orderBy = DB.Tracks.DEFAULT_SORT_ORDER;
-            break;
-
-        case TRACK_ID:
-            qb.setTables(DB.Tracks.TABLE_NAME);
-            qb.appendWhere(DB.Tracks._ID + "=" + uri.getPathSegments().get(1));
-            orderBy = DB.Tracks.DEFAULT_SORT_ORDER;
-            break;
-            default:
-            throw new IllegalArgumentException("Unknown URI " + uri);
+        int index = sUriMatcher.match(uri);
+        if(index>0)
+        {
+        	TableListEntry entry = sTableList.elementAt(index-1);
+            qb.setTables(entry.TABLE_NAME);
+            if(entry.isItem)
+            	qb.appendWhere(BaseColumns._ID + "=" + uri.getPathSegments().get(1));
+            orderBy = entry.DEFAULT_SORT_ORDER;
         }
+        else
+            throw new IllegalArgumentException("Unknown URI " + uri);
 
         // If no sort order is specified use the default
         if (!TextUtils.isEmpty(sortOrder))
@@ -281,5 +280,5 @@ public class SoundCloudData extends ContentProvider {
         return count;
 	}
 	
-	private DatabaseHelper mOpenHelper;
+	protected DatabaseHelper mOpenHelper;
 }

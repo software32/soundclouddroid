@@ -2,6 +2,8 @@ package org.urbanstew.SoundCloudBase;
 
 import java.util.concurrent.Semaphore;
 
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
@@ -30,6 +32,12 @@ public class ObtainAccessToken extends SoundCloudBaseActivity implements SoundCl
         setContentView(R.layout.obtain_access_token);
                 
         mWebView = (WebView) findViewById(R.id.webview);
+        mWebView.getSettings().setJavaScriptEnabled(true);
+        mWebView.getSettings().setBlockNetworkImage(false);
+        mWebView.getSettings().setLoadsImagesAutomatically(true);
+        
+        if(Integer.parseInt(android.os.Build.VERSION.SDK) >= 8)
+        	new setSettingsForSDK8(mWebView);
         mWebView.setWebViewClient(
         	new WebViewClient()
         	{
@@ -67,17 +75,47 @@ public class ObtainAccessToken extends SoundCloudBaseActivity implements SoundCl
 		{
 			public void run()
 			{
-				Toast.makeText
-				(
-					ObtainAccessToken.this,
-					"Authorization "
-						+ (status == AuthorizationStatus.SUCCESSFUL ? "successful." : "failed.")
-						+ (mAuthorizationException != null ? mAuthorizationException.toString() : ""),
-					Toast.LENGTH_LONG
-				).show();
+				if(status == AuthorizationStatus.SUCCESSFUL)
+				{
+					Toast.makeText
+					(
+						ObtainAccessToken.this,
+						"Authorization successful.",
+						Toast.LENGTH_LONG
+					).show();
+					finish();
+				}
+				else
+				{
+					String message = "";
+					if(mAuthorizationException != null)
+					{
+						message += "Authorization failed with exception " + mAuthorizationException.getClass().getName();
+//						if(mAuthorizationException.getCause() != null)
+//							message += " (" + mAuthorizationException..getCause() + ")";
+						message += ".";
+						if(mAuthorizationException.getLocalizedMessage() != null)
+							message += "\n\n" + mAuthorizationException.getLocalizedMessage() + ".";
+					}
+					new AlertDialog.Builder(ObtainAccessToken.this)
+						.setTitle("Authorization Failed")
+						.setMessage(message)
+						.setCancelable(false)
+						.setPositiveButton
+						(
+							"OK",
+				    		new DialogInterface.OnClickListener()
+							{
+								public void onClick(DialogInterface dialog, int id)
+								{
+									finish();
+								}
+							}
+						)
+						.create().show();
+				}       
 			}
 		});
-		finish();
 	}
 
 	public void openAuthorizationURL(String url)
@@ -111,4 +149,12 @@ public class ObtainAccessToken extends SoundCloudBaseActivity implements SoundCl
     Semaphore mVerificationCodeAvailable;
     String mVerificationCode;
     Exception mAuthorizationException = null;
+}
+
+class setSettingsForSDK8
+{
+	setSettingsForSDK8(WebView mWebView)
+	{
+		mWebView.getSettings().setBlockNetworkLoads(false);
+	}
 }

@@ -41,22 +41,15 @@ public class SoundCloudDroid extends SoundCloudMainActivity
     public void onCreate(Bundle savedInstanceState)
     {
         super.onCreate(savedInstanceState);
-
-        ((Button) findViewById(R.id.view_tracks_button))
+        
+        openedTrackListsAutomatically = false;
+        
+        ((Button) findViewById(R.id.custom_queries_button))
     	.setOnClickListener(new OnClickListener()
     	{
 			public void onClick(View arg0)
 			{
-				startActivity(new Intent(getApplication(), ViewTracksActivity.class));					
-			}
-    	});
-
-        ((Button) findViewById(R.id.view_favorites_button))
-    	.setOnClickListener(new OnClickListener()
-    	{
-			public void onClick(View arg0)
-			{
-				startActivity(new Intent(getApplication(), ViewOtherTracksActivity.class));					
+				startActivity(new Intent(getApplication(), CustomTrackListsActivity.class));					
 			}
     	});
 
@@ -89,6 +82,18 @@ public class SoundCloudDroid extends SoundCloudMainActivity
 	        }
     	}
     }
+    
+	public void setUserName(String userName)
+	{
+		super.setUserName(userName);
+		if(userName != null && !openedTrackListsAutomatically)
+		{
+			startActivity(new Intent(getApplication(), CustomTrackListsActivity.class));
+			openedTrackListsAutomatically = true;
+		}
+	}
+	
+	boolean openedTrackListsAutomatically;
 	
 }
 

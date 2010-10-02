@@ -35,7 +35,7 @@ public class SoundCloudService extends ForegroundService
 		notification.setLatestEventInfo
 		(
 			getApplicationContext(),
-			"SoundCloud Droid",
+			getString(R.string.app_name),
 			"Communicating with SoundCloud...",
 			PendingIntent.getActivity(getApplicationContext(), 0, new Intent(), 0)
 		);

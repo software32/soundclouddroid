@@ -10,6 +10,7 @@ import android.content.ContentUris;
 import android.content.DialogInterface;
 import android.database.Cursor;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.ContextMenu;
 import android.view.Menu;
@@ -17,13 +18,14 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ContextMenu.ContextMenuInfo;
 import android.widget.AdapterView;
+import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.SimpleCursorAdapter;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.SimpleCursorAdapter.ViewBinder;
 
-public class ViewTracksActivity extends ListActivity
+public class ViewTracksActivity extends ListActivity implements SoundCloudRequestClient, PlaybackDialog.OnCancelListener
 {
 	public SoundCloudApplicationBase getSCApplicationBase()
 	{
@@ -43,7 +45,7 @@ public class ViewTracksActivity extends ListActivity
 
         // Map uploads to ListView
         SimpleCursorAdapter adapter = new SimpleCursorAdapter(this, R.layout.tracks_item, mCursor,
-                new String[] { DB.Tracks.TITLE, DB.Tracks.DURATION }, new int[] { android.R.id.text1, android.R.id.text2 });
+                new String[] { DB.Tracks.TITLE, DB.Tracks.DURATION, DB.Tracks.STREAM_URL}, new int[] { android.R.id.text1, android.R.id.text2, android.R.id.icon});
         setListAdapter(adapter);
         getListView().setTextFilterEnabled(true);
         
@@ -53,9 +55,16 @@ public class ViewTracksActivity extends ListActivity
 			public boolean setViewValue(View view, Cursor cursor,
 					int columnIndex)
 			{
-				TextView v = (TextView)view;
-				if(v.getId() == android.R.id.text1)
+				if(view.getId() == android.R.id.icon)
+				{
+					ImageView v = (ImageView)view;
+					v.setVisibility(TextUtils.isEmpty(cursor.getString(columnIndex)) ? View.INVISIBLE : View.VISIBLE);
+					return true;
+				}
+				else if(view.getId() == android.R.id.text1)
 					return false;
+				
+				TextView v = (TextView)view;
 				
 				long duration = cursor.getLong(4);
 				
@@ -76,8 +85,10 @@ public class ViewTracksActivity extends ListActivity
         
         if(mCursor.getCount() == 0)
         	requestOffset(0);
+        else requestedOffset = -1;
         
         mPlaybackDialog = new PlaybackDialog(this);
+        mPlaybackDialog.setOnCancelListener(this);
   	}
 	
 	public void onPause()
@@ -129,7 +140,9 @@ public class ViewTracksActivity extends ListActivity
 
 	public void requestOffset(int offset)
 	{
-        requestedOffset=offset;
+		requestedOffset=offset;
+		if(requestedOffset == 0)
+			getContentResolver().delete(DB.Tracks.CONTENT_URI, DB.Tracks.CLASS + "=" + mClass, null);
         getSCApplicationBase().processRequest(mQuery + "?offset=" + offset + "&limit=" + limit, tracksRequestClient);
 	}
 
@@ -144,8 +157,6 @@ public class ViewTracksActivity extends ListActivity
 				return;
 			}
 
-			if(requestedOffset == 0)
-				getContentResolver().delete(DB.Tracks.CONTENT_URI, DB.Tracks.CLASS + "=" + mClass, null);
 			int numTracks = getSCApplicationBase().processTracks(response, mClass);
 				
 			if(numTracks == limit)
@@ -191,6 +202,7 @@ public class ViewTracksActivity extends ListActivity
 			int x = response.getStatusLine().getStatusCode();
 			if(x != 200)
 			{
+				reportRequestFailure(response.getStatusLine().getReasonPhrase());
 				Log.e(ViewTracksActivity.class.getSimpleName(), "Delete request returned with response " + x + ", " + response.getStatusLine().getReasonPhrase());
 				return;
 			}
@@ -205,10 +217,21 @@ public class ViewTracksActivity extends ListActivity
 		
 		public void requestFailed(Exception e)
 		{
+			reportRequestFailure(e.getLocalizedMessage());
 			Log.d(ViewTracksActivity.class.getSimpleName(), "Delete request failed with exception");
 			e.printStackTrace();
 		}
 		
+		private void reportRequestFailure(final String message)
+		{
+			ViewTracksActivity.this.runOnUiThread(new Runnable()
+			{
+				public void run()
+				{
+					Toast.makeText(ViewTracksActivity.this, "The track could not be deleted (" + message + ")", Toast.LENGTH_SHORT).show();			
+				}				
+			});
+		}
 		private long mId;
 	};
 	
@@ -238,8 +261,13 @@ public class ViewTracksActivity extends ListActivity
 		public void onCreateContextMenu(ContextMenu menu, View v,
 				ContextMenuInfo menuInfo)
 		{
-			menu.add(Menu.NONE, MENU_ITEM_PLAYBACK, 0, "Play");
-			menu.add(Menu.NONE, MENU_ITEM_DOWNLOAD, 1, "Download MP3");
+			AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo) menuInfo;  
+			mCursor.moveToPosition(info.position);
+			if(!TextUtils.isEmpty(mCursor.getString(3)))
+			{
+				menu.add(Menu.NONE, MENU_ITEM_PLAYBACK, 0, "Play");
+				menu.add(Menu.NONE, MENU_ITEM_DOWNLOAD, 1, "Download MP3");
+			}
 			menu.add(Menu.NONE, MENU_ITEM_DELETE, 2, "Delete from SoundCloud");
 		}
     };
@@ -292,12 +320,21 @@ public class ViewTracksActivity extends ListActivity
 			getSCApplicationBase().processRequest("tracks/" + mCursor.getLong(2), trackRequestClient);
 
 		String streamUrl = mCursor.getString(3);
-		Log.d(ViewTracksActivity.class.getSimpleName(), "getting " + streamUrl);
 		try
 		{
-			streamUrl = getSCApplicationBase().getSoundCloudAPI().signStreamUrl(streamUrl);
-	
-		    mPlaybackDialog.displayPlaybackDialog(streamUrl);
+			Log.d(ViewTracksActivity.class.getName(), "getting " + streamUrl);
+			if(Integer.parseInt(android.os.Build.VERSION.SDK) >= 4)
+			{
+				streamUrl = getSCApplicationBase().getSoundCloudAPI().signStreamUrl(streamUrl);
+				Log.d(ViewTracksActivity.class.getName(), "signed as " + streamUrl);
+
+			    mPlaybackDialog.displayPlaybackDialog(streamUrl);
+			}
+			else
+			{
+				getSCApplicationBase().processRequest(streamUrl, this, RequestType.GET_STREAM_REDIRECT);
+			    mPlaybackDialog.displayPlaybackDialog();
+			}
 		} catch (Exception e)
 		{
 			e.printStackTrace();
@@ -310,11 +347,27 @@ public class ViewTracksActivity extends ListActivity
     	getSCApplicationBase().processRequest("tracks/" + mCursor.getLong(2), new DeleteRequestClient(mCursor.getLong(0)), RequestType.DELETE);
     }
     
-    protected void setQueryAndClass(String query, int class_)
+    protected void setQueryAndClass(String query, long _class)
     {
     	mQuery = query;
-    	mClass = class_;
+    	mClass = _class;
     }
+    
+    protected long getQueryClass()
+    {
+    	return mClass;
+    }
+    
+    protected String getQuery()
+    {
+    	return mQuery;
+    }
+    
+    protected boolean requestIssued()
+    {
+    	return requestedOffset != -1;
+    }
+    
 	Cursor mCursor;
 	int requestedOffset;
 	int limit = 50;
@@ -322,7 +375,7 @@ public class ViewTracksActivity extends ListActivity
 	private MenuItem mSynchronizeMenuItem, mHelpMenuItem;
 	PlaybackDialog mPlaybackDialog;
 	private String mQuery = "me/tracks"; // default query value
-	private int mClass = 0; // default class value
+	private long mClass = 0L; // default class value
 	
     protected static final String[] sTracksProjection = new String[]
 	{
@@ -332,4 +385,39 @@ public class ViewTracksActivity extends ListActivity
 	      DB.Tracks.STREAM_URL, // 3
 	      DB.Tracks.DURATION, // 4
 	};
+
+	public void requestCompleted(HttpResponse response)
+	{
+		final String redirectUrl = getSCApplicationBase().getSoundCloudAPI().parseRedirectResponse(response);
+		Log.d(ViewTracksActivity.class.getName(), "redirected as " + redirectUrl);
+
+		runOnUiThread(new Runnable()
+		{
+			public void run()
+			{
+				if(redirectUrl != null)
+					mPlaybackDialog.provideStreamUrl(redirectUrl);
+				else
+					mPlaybackDialog.error();
+			}
+		});
+	}
+
+	public void requestFailed(Exception e)
+	{
+		Log.d(ViewTracksActivity.class.getName(), "ViewTracksActivity request failed with Exception");
+		e.printStackTrace();
+		runOnUiThread(new Runnable()
+		{
+			public void run()
+			{
+				mPlaybackDialog.error();
+			}
+		});
+	}
+
+	public void onPlaybackDialogCancel()
+	{
+		getSCApplicationBase().cancel(this);
+	}
 }

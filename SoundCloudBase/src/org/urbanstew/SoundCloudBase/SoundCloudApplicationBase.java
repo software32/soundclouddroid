@@ -87,6 +87,7 @@ public class SoundCloudApplicationBase extends Application
 	{
 		GET,
 		GET_STREAM,
+		GET_STREAM_REDIRECT,
 		DELETE
 	}
 	
@@ -111,16 +112,20 @@ public class SoundCloudApplicationBase extends Application
 						break;
 					case GET_STREAM:
 						response = mSoundCloud.getStream(request);
-						break;			
+						break;
+					case GET_STREAM_REDIRECT:
+						response = mSoundCloud.getStreamRedirect(request);
+						break;
 					case DELETE:
 						response = mSoundCloud.delete(request);
 						break;
 					}
-					client.requestCompleted(response);
 				} catch (Exception e)
 				{
 					client.requestFailed(e);
 				}
+				if(response != null)
+					client.requestCompleted(response);
 				complete(client, Thread.currentThread());
 			}
     	});
@@ -228,10 +233,15 @@ public class SoundCloudApplicationBase extends Application
                 
 		final int notificationId = mDownloadNotificationId++;		
 		
-		final File newFile = new File(Environment.getExternalStorageDirectory() + "/SoundCloudDroid/" + filename);
+		String downloadDirectory = getString(R.string.SCB_download_directory);
+		final File newFile = new File(Environment.getExternalStorageDirectory() + downloadDirectory + "/" + filename);
 		boolean fileCreated;
 
-		new File(Environment.getExternalStorageDirectory() + "/SoundCloudDroid").mkdirs();
+		File directory = new File(Environment.getExternalStorageDirectory() + downloadDirectory);
+		if(!directory.mkdirs())
+		{
+			Log.e(SoundCloudApplicationBase.class.getName(), "Failed mkdirs: " + directory.getAbsolutePath());
+		}
 		newFile.delete();
 		try
 		{
@@ -297,7 +307,7 @@ public class SoundCloudApplicationBase extends Application
 			    		notification.setLatestEventInfo
 			    		(
 			    			getApplicationContext(),
-			    			"SoundCloud Droid",
+			    			getString(R.string.app_name),
 			    			notificationString,
 			    			PendingIntent.getActivity(getApplicationContext(), 0, intent, 0)
 			    		);
@@ -310,6 +320,7 @@ public class SoundCloudApplicationBase extends Application
 			thread.start();
 		} catch (IOException e1)
 		{
+			e1.printStackTrace();
 		}
 		return newFile.getAbsolutePath();
 	}
@@ -432,18 +443,18 @@ public class SoundCloudApplicationBase extends Application
     	int mId;
     }
 	
-	public int processTracks(HttpResponse response, int class_)
+	public int processTracks(HttpResponse response, long class1)
 	{
-		return processTracks(response, class_, false);
+		return processTracks(response, class1, false);
 	}
 	
-	public int processTracks(HttpResponse response, int class_, boolean update)
+	public int processTracks(HttpResponse response, long class1, boolean update)
 	{
 		try
 		{
 			SAXParserFactory spf = SAXParserFactory.newInstance();
             SAXParser sp = spf.newSAXParser();
-            TracksHandler handler = new TracksHandler(update, class_);
+            TracksHandler handler = new TracksHandler(update, class1);
 
             XMLReader xr = sp.getXMLReader();
             xr.setContentHandler(handler);       
@@ -517,12 +528,12 @@ public class SoundCloudApplicationBase extends Application
 		StringBuilder mLastCharacters = new StringBuilder();
 		int tracksProcessed=0;
 		boolean update;
-		int class_;
+		long class_;
 
-		TracksHandler(boolean update, int class_)
+		TracksHandler(boolean update, long class1)
 		{
 			this.update = update;
-			this.class_ = class_;
+			this.class_ = class1;
 		}
 		public int getTracksProcessed()
 		{

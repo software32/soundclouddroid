@@ -28,14 +28,8 @@
     android:gravity="center"
 	/>
 <Button
-	android:id="@+id/view_tracks_button"
-	android:text="Play/Download/Upload My Tracks"
-    android:layout_width="fill_parent" 
-    android:layout_height="wrap_content"
-	/>
-<Button
-	android:id="@+id/view_favorites_button"
-	android:text="Play/Download My Favorites"
+	android:id="@+id/custom_queries_button"
+	android:text="Track Lists"
     android:layout_width="fill_parent" 
     android:layout_height="wrap_content"
 	/>

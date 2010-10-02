@@ -41,7 +41,7 @@ public class PlaybackDialog
             	{
             		public void onClick(DialogInterface dialog, int whichButton)
             		{
-            			releasePlayer();
+            			cancelling();
                 	}
             	}
             )
@@ -49,7 +49,7 @@ public class PlaybackDialog
             {
 				public void onCancel(DialogInterface dialog)
 				{
-					releasePlayer();
+					cancelling();
 				}
             })
             .create();
@@ -127,6 +127,18 @@ public class PlaybackDialog
         );*/
 	}
 	
+	private void cancelling()
+	{
+		releasePlayer();
+		if(mListener != null)
+			mListener.onPlaybackDialogCancel();
+	}
+	
+	public void setOnCancelListener(OnCancelListener listener)
+	{
+		mListener = listener;
+	}
+	
 	public void onPause()
 	{
 		mCurrentTimeTask.cancel();
@@ -197,7 +209,7 @@ public class PlaybackDialog
 		mPlayPauseButton.setImageDrawable(mActivity.getResources().getDrawable(id));		
 	}
 	
-    public void displayPlaybackDialog(String streamUrl)
+    public void displayPlaybackDialog()
     {
     	if(mPlayer != null)
     		mPlayer.release();
@@ -206,7 +218,6 @@ public class PlaybackDialog
 	    mPlayerIsPrepared = false;
 	    try
 		{
-			mPlayer.setDataSource(streamUrl); // throws
 			
 	  		setPlayPauseButton(android.R.drawable.ic_media_pause);
 	  		mPlayPauseButton.setEnabled(false);
@@ -215,7 +226,6 @@ public class PlaybackDialog
 			mSeekBar.setEnabled(false);
 			updateProgressDisplay();
 			
-	    	mPlayer.prepareAsync();
 	    	mPlayer.setOnPreparedListener(new OnPreparedListener()
 		   	{
 				public void onPrepared(MediaPlayer mp)
@@ -242,21 +252,51 @@ public class PlaybackDialog
 
 		} catch (IllegalArgumentException e)
 		{
-			mPlayer.release();
+			releasePlayer();
 			e.printStackTrace();
 		} catch (IllegalStateException e)
 		{
 			// this should not happen
-			mPlayer.release();
-			e.printStackTrace();
-		} catch (IOException e)
-		{
-			// TODO Auto-generated catch block
-			mPlayer.release();
+			releasePlayer();
 			e.printStackTrace();
 		}
     }
-
+    
+    public void provideStreamUrl(String streamUrl)
+    {
+    	if(mPlayer == null)
+    		return;
+		try
+		{
+			mPlayer.setDataSource(streamUrl);
+		} catch (IllegalArgumentException e)
+		{
+			releasePlayer();
+			e.printStackTrace();
+		} catch (IllegalStateException e)
+		{
+			releasePlayer();
+			e.printStackTrace();
+		} catch (IOException e)
+		{
+			releasePlayer();
+			e.printStackTrace();
+		}
+    	mPlayer.prepareAsync();
+    }
+    
+    public void error()
+    {
+    	releasePlayer();
+    	mPlaybackDuration.setText("error");
+    }
+    
+    public void displayPlaybackDialog(String streamUrl)
+    {
+    	displayPlaybackDialog();
+    	provideStreamUrl(streamUrl);
+    }
+    
 	Activity mActivity;
 	
     MediaPlayer mPlayer = null;
@@ -275,4 +315,10 @@ public class PlaybackDialog
 	private TimerTask mCurrentTimeTask;
 
 	private Timer mTimer = new Timer();
+	OnCancelListener mListener = null;
+	
+	public interface OnCancelListener
+	{
+		public void onPlaybackDialogCancel();
+	}
 }
