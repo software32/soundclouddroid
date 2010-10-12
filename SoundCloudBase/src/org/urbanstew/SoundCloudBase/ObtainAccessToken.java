@@ -130,6 +130,7 @@ public class ObtainAccessToken extends SoundCloudBaseActivity implements SoundCl
 			mVerificationCodeAvailable.acquire();
 		} catch (InterruptedException e)
 		{
+			Log.v(ObtainAccessToken.class.getSimpleName(), Log.getStackTraceString(e));
 			return null;
 		}
 		return mVerificationCode;
@@ -137,6 +138,7 @@ public class ObtainAccessToken extends SoundCloudBaseActivity implements SoundCl
 	
 	public void exceptionOccurred(Exception e)
 	{
+		Log.v(ObtainAccessToken.class.getSimpleName(), Log.getStackTraceString(e));
 		mAuthorizationException = e;
 	}
 
