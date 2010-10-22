@@ -157,6 +157,9 @@ class setSettingsForSDK8
 {
 	setSettingsForSDK8(WebView mWebView)
 	{
-		mWebView.getSettings().setBlockNetworkLoads(false);
+		// disabled because it requires Android 2.2, and building with 2.2
+		// and an ImageButton seems to cause errors (see Issue 59),
+		// and I'm not sure whether it has any benefit anyway
+//		mWebView.getSettings().setBlockNetworkLoads(false);
 	}
 }
