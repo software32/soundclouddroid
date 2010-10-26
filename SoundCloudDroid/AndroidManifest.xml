@@ -2,7 +2,7 @@
 
 <!-- Change for specific app -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-      package="org.urbanstew.soundclouddroid" android:versionCode="15" android:versionName="1.2.1">
+      package="org.urbanstew.soundclouddroid" android:versionName="1.2.1" android:versionCode="16">
     <application android:icon="@drawable/icon" android:label="@string/app_name" android:name="SoundCloudApplication" android:debuggable="false">
         	
         <activity android:name=".SoundCloudDroid"
