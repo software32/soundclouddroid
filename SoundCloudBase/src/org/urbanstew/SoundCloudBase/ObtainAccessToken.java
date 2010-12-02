@@ -2,11 +2,16 @@ package org.urbanstew.SoundCloudBase;
 
 import java.util.concurrent.Semaphore;
 
+import org.urbanstew.soundclouddroid.CustomTrackListsActivity;
+
 import android.app.AlertDialog;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
+import android.view.View.OnClickListener;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Button;
@@ -30,8 +35,9 @@ public class ObtainAccessToken extends SoundCloudBaseActivity implements SoundCl
     {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.obtain_access_token);
-                
-        mWebView = (WebView) findViewById(R.id.webview);
+        
+        //JH: OAuth 2 won't need a web view
+        /* mWebView = (WebView) findViewById(R.id.webview);
         mWebView.getSettings().setJavaScriptEnabled(true);
         mWebView.getSettings().setBlockNetworkImage(false);
         mWebView.getSettings().setLoadsImagesAutomatically(true);
@@ -53,9 +59,20 @@ public class ObtainAccessToken extends SoundCloudBaseActivity implements SoundCl
 					return false;
         		}
         	});
+        	
+		Toast.makeText(ObtainAccessToken.this, "Please select \"Allow access\" when the SoundCloud authorization page loads.", Toast.LENGTH_LONG).show();
+         */
         
-        Toast.makeText(ObtainAccessToken.this, "Please select \"Allow access\" when the SoundCloud authorization page loads.", Toast.LENGTH_LONG).show();
-
+        ((Button) findViewById(R.id.login_button))
+    	.setOnClickListener(new OnClickListener()
+    	{
+			public void onClick(View arg0)
+			{
+				// JH: set callback to Stjepan's Oauth 2 login method
+				startActivity(new Intent(getApplication(), CustomTrackListsActivity.class));					
+			}
+    	});        
+        
         mVerificationCodeAvailable = new Semaphore(0);
     	getSCApplicationBase().authorizeWithoutCallback(this);
     }
