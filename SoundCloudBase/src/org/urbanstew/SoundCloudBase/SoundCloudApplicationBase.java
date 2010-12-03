@@ -77,7 +77,7 @@ public class SoundCloudApplicationBase extends Application
     		consumerSecret,
     		preferences.getString("oauth_access_token", ""),
     		preferences.getString("oauth_access_token_secret", ""),
-    		(useSandbox ? SoundCloudAPI.USE_SANDBOX : SoundCloudAPI.USE_PRODUCTION).with(SoundCloudAPI.OAuthVersion.V1_0)
+    		(useSandbox ? SoundCloudAPI.USE_SANDBOX : SoundCloudAPI.USE_PRODUCTION).with(SoundCloudAPI.OAuthVersion.V2_0)
     	);
     	    	
     	return soundCloud;
