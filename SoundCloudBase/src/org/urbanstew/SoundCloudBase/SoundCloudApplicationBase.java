@@ -168,7 +168,7 @@ public class SoundCloudApplicationBase extends Application
 		launch(client, thread);
 	}
 
-	public void authorize(final SoundCloudAuthorizationClient client)
+	public void authorize(final SoundCloudAuthorizationClient client, final String username, final String password)
 	{
 		Thread thread = new Thread(new Runnable()
 		{
@@ -178,30 +178,12 @@ public class SoundCloudApplicationBase extends Application
 
 				try
 				{
-					// Find a free port
-					int port=58088;
-/*					for(port=58088; port<59099; port++)
+					mSoundCloud.obtainAccessToken(username, password);
+					if(mSoundCloud.getState() == SoundCloudAPI.State.AUTHORIZED)
 					{
-						ServerSocket socket = null;
-						try
-						{
-							socket = new ServerSocket(port);
-						    break;
-						} catch (IOException e) {
-						} finally {
-						    if (socket != null) socket.close(); 
-						}
-					}*/
-					if(port<59099)
-					{
-						if(mSoundCloud.authorizeUsingUrl("http://127.0.0.1:" + port + "/","Thank you for authorizing",client))
-						{
-							status = AuthorizationStatus.SUCCESSFUL;
-							storeAuthorization();
-						}
-						else
-							status = AuthorizationStatus.CANCELED;
-					} // else failed
+						status = AuthorizationStatus.SUCCESSFUL;
+						storeAuthorization();
+					}
 				} catch (Exception e)
 				{
 					// failed

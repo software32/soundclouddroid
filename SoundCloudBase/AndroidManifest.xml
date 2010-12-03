@@ -5,7 +5,7 @@
       android:versionName="1.0">
 <application>
 
-<provider android:name="org.urbanstew.SoundCloudBase.SoundCloudData" android:authorities="@string/provider_name"></provider>
+<provider android:name="org.urbanstew.SoundCloudBase.SoundCloudData" android:authorities="org.urbanstew.provider.soundclouddroid"></provider>
 
 <!-- SoundCloudBase -->
 	    <activity

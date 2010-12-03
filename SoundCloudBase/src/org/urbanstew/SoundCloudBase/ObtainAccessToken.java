@@ -2,19 +2,15 @@ package org.urbanstew.SoundCloudBase;
 
 import java.util.concurrent.Semaphore;
 
-import org.urbanstew.soundclouddroid.CustomTrackListsActivity;
-
 import android.app.AlertDialog;
 import android.content.DialogInterface;
-import android.content.Intent;
-import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.webkit.WebView;
-import android.webkit.WebViewClient;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.Toast;
 
 /**
@@ -68,13 +64,16 @@ public class ObtainAccessToken extends SoundCloudBaseActivity implements SoundCl
     	{
 			public void onClick(View arg0)
 			{
+				String username = ((EditText) findViewById(R.id.user_box)).getText().toString();
+				String password = ((EditText) findViewById(R.id.pass_box)).getText().toString();
+				
 				// JH: set callback to Stjepan's Oauth 2 login method
-				startActivity(new Intent(getApplication(), CustomTrackListsActivity.class));					
+				getSCApplicationBase().authorize(ObtainAccessToken.this, username, password);
 			}
     	});        
         
-        mVerificationCodeAvailable = new Semaphore(0);
-    	getSCApplicationBase().authorizeWithoutCallback(this);
+//        mVerificationCodeAvailable = new Semaphore(0);
+//    	getSCApplicationBase().authorizeWithoutCallback(this);
     }
 
     public void onDestroy()
