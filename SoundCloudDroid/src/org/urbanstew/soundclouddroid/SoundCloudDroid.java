@@ -44,12 +44,11 @@ public class SoundCloudDroid extends SoundCloudMainActivity
         
         openedTrackListsAutomatically = false;
         
-        ((Button) findViewById(R.id.login_button))
+        ((Button) findViewById(R.id.custom_queries_button))
     	.setOnClickListener(new OnClickListener()
     	{
 			public void onClick(View arg0)
 			{
-				// JH: set callback to Stjepan's Oauth 2 login method
 				startActivity(new Intent(getApplication(), CustomTrackListsActivity.class));					
 			}
     	});
