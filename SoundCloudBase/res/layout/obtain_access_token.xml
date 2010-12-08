@@ -15,17 +15,16 @@
 
 	<EditText android:layout_height="wrap_content" 
 		android:fitsSystemWindows="true" 
-		android:text="Username" 
-		android:id="@+id/user_box" android:layout_width="fill_parent" android:selectAllOnFocus="true" android:nextFocusUp="@+id/user_box">
+		android:id="@+id/user_box" android:layout_width="fill_parent" android:selectAllOnFocus="true" android:nextFocusUp="@+id/user_box" android:hint="Username">
 	</EditText>
 	
 	<EditText android:layout_height="wrap_content" 
 		android:id="@+id/pass_box" 
-		android:text="Password" 
+		android:password="true"
 		android:selectAllOnFocus="true" 
 		android:cursorVisible="true" 
 		android:layout_width="fill_parent" 
-		android:nextFocusDown="@+id/pass_box">
+		android:nextFocusDown="@+id/pass_box" android:singleLine="true" android:hint="Password">
 	</EditText>
 
 	<Button android:layout_height="wrap_content" 
