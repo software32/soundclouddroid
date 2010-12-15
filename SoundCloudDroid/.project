@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-	<name>SoundCloud Droid</name>
+	<name>SoundCloudDroid</name>
 	<comment></comment>
 	<projects>
 	</projects>
@@ -32,9 +32,14 @@
 	</natures>
 	<linkedResources>
 		<link>
+			<name>ObtainAccessToken_src</name>
+			<type>2</type>
+			<locationURI>_android_ObtainAccessToken/src</locationURI>
+		</link>
+		<link>
 			<name>SoundCloudBase</name>
 			<type>2</type>
-			<location>/Development/soundclouddroid/SoundCloudBase/src</location>
+			<location>C:/Development/soundclouddroid/SoundCloudBase/src</location>
 		</link>
 	</linkedResources>
 </projectDescription>

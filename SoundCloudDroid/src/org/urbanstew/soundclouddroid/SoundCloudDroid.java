@@ -1,7 +1,7 @@
 package org.urbanstew.soundclouddroid;
 
 
-import org.urbanstew.SoundCloudBase.R;
+//import org.urbanstew.SoundCloudBase.R;
 import org.urbanstew.SoundCloudBase.SoundCloudMainActivity;
 
 import android.app.AlertDialog;
