@@ -323,18 +323,18 @@ public class ViewTracksActivity extends ListActivity implements SoundCloudReques
 		try
 		{
 			Log.d(ViewTracksActivity.class.getName(), "getting " + streamUrl);
-			if(Integer.parseInt(android.os.Build.VERSION.SDK) >= 4)
-			{
-				streamUrl = getSCApplicationBase().getSoundCloudAPI().signStreamUrl(streamUrl);
-				Log.d(ViewTracksActivity.class.getName(), "signed as " + streamUrl);
-
-			    mPlaybackDialog.displayPlaybackDialog(streamUrl);
-			}
-			else
-			{
+//			if(Integer.parseInt(android.os.Build.VERSION.SDK) >= 4)
+//			{
+//				streamUrl = getSCApplicationBase().getSoundCloudAPI().signStreamUrl(streamUrl);
+//				Log.d(ViewTracksActivity.class.getName(), "signed as " + streamUrl);
+//
+//			    mPlaybackDialog.displayPlaybackDialog(streamUrl);
+//			}
+//			else
+//			{
 				getSCApplicationBase().processRequest(streamUrl, this, RequestType.GET_STREAM_REDIRECT);
 			    mPlaybackDialog.displayPlaybackDialog();
-			}
+//			}
 		} catch (Exception e)
 		{
 			e.printStackTrace();

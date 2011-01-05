@@ -242,10 +242,20 @@ public class PlaybackDialog
 	    	{
 				public boolean onError(MediaPlayer mp, int what, int extra)
 				{
-					if(what==MediaPlayer.MEDIA_ERROR_SERVER_DIED)
-						mPlaybackDuration.setText("server died");
-					else
-						mPlaybackDuration.setText("error");
+					String mError;
+
+					switch(what)
+					{
+						case MediaPlayer.MEDIA_ERROR_SERVER_DIED:
+							mError = "server died"; break;
+						case MediaPlayer.MEDIA_ERROR_NOT_VALID_FOR_PROGRESSIVE_PLAYBACK:
+							mError = "no progressive playback"; break;
+						case MediaPlayer.MEDIA_ERROR_UNKNOWN:
+							mError = "unknown error (extra=" + extra + ")"; break;
+						default:
+							mError = "error (what=" + what + ")";
+					}
+					mPlaybackDuration.setText(mError);
 					return false;
 				}
 	    	});
