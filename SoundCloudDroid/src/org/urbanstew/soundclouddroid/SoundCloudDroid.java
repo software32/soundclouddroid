@@ -3,6 +3,7 @@ package org.urbanstew.soundclouddroid;
 
 import org.urbanstew.SoundCloudBase.R;
 import org.urbanstew.SoundCloudBase.SoundCloudMainActivity;
+import org.urbanstew.util.AppDataAccess;
 
 import android.app.AlertDialog;
 import android.content.DialogInterface;
@@ -30,7 +31,7 @@ public class SoundCloudDroid extends SoundCloudMainActivity
 {
 	static
 	{
-		CURRENT_VERSION = 1.0f;
+		CURRENT_VERSION = 1.22f;
 	}
 
 	/**
@@ -53,7 +54,26 @@ public class SoundCloudDroid extends SoundCloudMainActivity
 			}
     	});
 
-		final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+        final AppDataAccess appData = new AppDataAccess(this);
+        if(appData.getVisitedVersion() < 1.22f)
+        {
+        	new AlertDialog.Builder(this)
+        	.setTitle("Changing name to MusiCloud!")
+        	.setMessage(getString(R.string.name_change))
+        	.setPositiveButton
+        	(
+        		getString(android.R.string.ok),
+        		new DialogInterface.OnClickListener()
+        		{
+					public void onClick(DialogInterface dialog, int which)
+					{
+	        			appData.setVisitedVersion(CURRENT_VERSION);
+					}
+        		}
+        	).show();
+        }
+
+        final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
     	if(preferences.getBoolean("check_old_version", true))
     	{
 	        try
